@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Episode - Podcast Universe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/uploader.css">
+    <style>
+        /* Mencegah scroll horizontal */
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+        }
+        /* Pastikan semua elemen tidak melebihi lebar viewport */
+        * {
+            box-sizing: border-box;
+        }
+        .modal-content {
+            max-width: 100%;
+        }
+        .cards-container {
+            max-width: 100%;
+        }
+        .upload-card, .projects-section {
+            max-width: 100%;
+        }
+        .table-wrapper {
+            overflow-x: auto; /* Scroll hanya di dalam wrapper tabel */
+        }
+        /* Deadline hanya 2 baris (asumsi kolom ke-4) */
+        #projectsList table td:nth-child(4) {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: normal;
+            max-width: 150px;
+        }
+    </style>
+</head>
+<body>
+    <div class="logout-btn" id="logoutBtnContainer" style="display: none;">
+        <button id="logoutBtn" class="btn-logout"><i class="fa-solid fa-sign-out-alt"></i> Logout</button>
+    </div>
+
+    <!-- Tombol Kembali ke Daftar Podcast (selalu terlihat) -->
+    <div class="back-to-podcast" style="position: absolute; top: 20px; left: 20px; z-index: 100;">
+        <a href="index.html" style="background: rgba(0,0,0,0.7); color: white; padding: 8px 15px; border-radius: 30px; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(5px);">
+            <i class="fa-solid fa-arrow-left"></i> Daftar Podcast
+        </a>
+    </div>
+
+    <div class="page-title">
+        <h1>🎙️ <span id="podcast-name">Podcast</span></h1>
+        <p>Upload episode baru</p>
+    </div>
+
+    <div class="cards-container" id="mainContent" style="pointer-events: none; opacity: 0.5;">
+        <!-- KARTU UPLOAD -->
+        <div class="upload-card">
+            <h2>📤 Upload Episode</h2>
+            <p class="subtitle">Isi data episode baru.</p>
+            <form id="uploadForm">
+                <input type="hidden" name="action" value="UPLOAD_RAW">
+                <input type="hidden" name="podcastId" id="podcastId" value="">
+                <div class="form-group">
+                    <label for="title">Judul Episode</label>
+                    <input type="text" id="title" name="title" placeholder="Contoh: Episode 1" autocomplete="off" required>
+                </div>
+                <div class="form-group">
+                    <label for="host">Host</label>
+                    <input type="text" id="host" name="host" placeholder="Nama host" autocomplete="off" required>
+                </div>
+                <div class="form-group">
+                    <label for="narasumber">Narasumber</label>
+                    <input type="text" id="narasumber" name="narasumber" placeholder="Nama narasumber" list="narasumberList" autocomplete="off" required>
+                    <datalist id="narasumberList"></datalist>
+                </div>
+                <div class="form-group">
+                    <label for="rawLink">Link Google Drive (RAW)</label>
+                    <input type="url" id="rawLink" name="rawLink" placeholder="https://drive.google.com/file/d/..." autocomplete="off" required>
+                </div>
+                <div class="button-group">
+                    <button type="submit" id="submitBtn">Kirim</button>
+                </div>
+            </form>
+            <div id="message" class="message"></div>
+        </div>
+
+        <!-- KARTU DAFTAR EPISODE -->
+        <div class="projects-section">
+            <h3>📋 Daftar Episode</h3>
+            <div class="table-wrapper">
+                <div id="projectsList">
+                    <div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> <span>Memuat data...</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="back-link">
+        <a href="index.html">← Kembali ke Daftar Podcast</a>
+    </div>
+
+    <!-- MODAL LOGIN -->
+    <div id="loginModal" class="modal" style="display: flex;">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2>🔐 Login Uploader</h2>
+            <p>Masukkan password untuk mengakses halaman ini.</p>
+            <div class="form-group">
+                <label for="uploaderPassword">Password</label>
+                <input type="password" id="uploaderPassword" placeholder="Masukkan password">
+            </div>
+            <div class="button-group">
+                <button id="loginBtn">Login</button>
+            </div>
+            <!-- Tautan kembali ke daftar podcast di dalam modal -->
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="index.html" style="color: #007AFF; text-decoration: none;">← Kembali ke Daftar Podcast</a>
+            </div>
+            <div id="loginMessage" class="message" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeEditModal()">&times;</span>
+            <h2>✏️ Edit Episode</h2>
+            <form id="editForm">
+                <input type="hidden" id="editRowIndex" name="rowIndex">
+                <div class="form-group">
+                    <label for="editTitle">Judul</label>
+                    <input type="text" id="editTitle" name="title" autocomplete="off" required>
+                </div>
+                <div class="form-group">
+                    <label for="editHost">Host</label>
+                    <input type="text" id="editHost" name="host" autocomplete="off" required>
+                </div>
+                <div class="form-group">
+                    <label for="editNarasumber">Narasumber</label>
+                    <input type="text" id="editNarasumber" name="narasumber" list="narasumberListEdit" autocomplete="off" required>
+                    <datalist id="narasumberListEdit"></datalist>
+                </div>
+                <div class="form-group">
+                    <label for="editRaw">RAW Link</label>
+                    <input type="url" id="editRaw" name="rawLink" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="editNote">Note</label>
+                    <textarea id="editNote" name="note" rows="2" autocomplete="off"></textarea>
+                </div>
+                <div class="button-group">
+                    <button type="submit">Simpan Perubahan</button>
+                    <button type="button" class="secondary" onclick="closeEditModal()">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/uploader.js"></script>
+    <!-- Tambahan script untuk menutup modal dengan klik di luar -->
+    <script>
+        // Fungsi untuk menutup modal edit
+        window.closeEditModal = function() {
+            document.getElementById('editModal').style.display = 'none';
+        };
+
+        // Tutup modal jika klik di luar area konten modal
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,499 @@
+/* ==================== GLOBAL ==================== */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f2f2f7;
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.page-title {
+    text-align: center;
+    margin: 10px 0 30px 0;
+}
+
+.page-title h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1c1c1e;
+    margin: 0;
+}
+
+.page-title p {
+    color: #8e8e93;
+    margin: 5px 0 0;
+    font-size: 16px;
+}
+
+.cards-container {
+    max-width: 1200px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: stretch;
+    margin-bottom: 30px;
+}
+
+.upload-card,
+.projects-section {
+    background: white;
+    border-radius: 30px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+    max-height: 70vh;
+}
+
+h2 {
+    margin-top: 0;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.subtitle {
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 14px;
+}
+
+/* ==================== FORM ==================== */
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #8e8e93;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+input,
+textarea,
+select {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid #ddd;
+    border-radius: 16px;
+    font-size: 16px;
+    outline: none;
+    transition: border 0.2s;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: #007AFF;
+}
+
+textarea {
+    resize: vertical;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    flex: 1;
+    padding: 16px;
+    background: #007AFF;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: #005bbf;
+}
+
+button.secondary {
+    background: #8e8e93;
+}
+
+button.secondary:hover {
+    background: #6c6c70;
+}
+
+.message {
+    margin-top: 20px;
+    padding: 12px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 14px;
+    display: none;
+}
+
+.success {
+    background: #d4edda;
+    color: #155724;
+    display: block;
+}
+
+.error {
+    background: #f8d7da;
+    color: #721c24;
+    display: block;
+}
+
+/* ==================== TABEL RESPONSIF ==================== */
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.project-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    min-width: 600px;
+}
+
+.project-table th,
+.project-table td {
+    padding: 12px 8px;
+    text-align: left;
+    word-break: break-word;
+}
+
+.project-table th {
+    background: #f2f2f7;
+    color: #8e8e93;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.project-table td {
+    border-bottom: 1px solid #e5e5ea;
+}
+
+/* Tombol aksi */
+.edit-btn,
+.delete-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    margin: 2px;
+}
+
+.edit-btn {
+    background: #007AFF;
+    color: white;
+}
+
+.delete-btn {
+    background: #ff3b30;
+    color: white;
+}
+
+.edit-btn i,
+.delete-btn i {
+    margin-right: 4px;
+}
+
+/* Status pill */
+.pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+    background: #8e8e93;
+}
+
+.pill-revision {
+    background: #ff3b30;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Responsive: ubah tabel menjadi card pada layar kecil */
+@media (max-width: 768px) {
+    .project-table {
+        min-width: 100%;
+    }
+
+    .project-table thead {
+        display: none;
+    }
+
+    .project-table tr {
+        display: block;
+        margin-bottom: 15px;
+        background: white;
+        border-radius: 12px;
+        padding: 10px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .project-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 5px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .project-table td:last-child {
+        border-bottom: none;
+    }
+
+    .project-table td:before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #8e8e93;
+        width: 40%;
+    }
+}
+
+/* ==================== MODAL ==================== */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 30px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.close-modal {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #888;
+}
+
+.close-modal:hover {
+    color: #333;
+}
+
+/* ==================== BACK LINK ==================== */
+.back-link {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.back-link a {
+    color: #007AFF;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.logout-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+}
+
+.btn-logout {
+    padding: 10px 20px;
+    background: #ff3b30;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 10px rgba(255, 59, 48, 0.3);
+}
+
+.btn-logout:hover {
+    background: #c41e1e;
+}
+
+/* ==================== LOADING SPINNER ALA IOS ==================== */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    color: #8e8e93;
+}
+
+.loading i {
+    font-size: 30px;
+    margin-right: 10px;
+    color: #007AFF;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Tombol loading state */
+button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+button i.fa-spinner {
+    margin-right: 8px;
+}
+
+/* ==================== PERBAIKAN TAMPILAN UPLOADER ==================== */
+.cards-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.episode-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    min-width: 800px; /* Pastikan tabel tidak terlalu kecil */
+}
+
+.episode-table th {
+    background: #f2f2f7;
+    padding: 12px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8e8e93;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.episode-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e5e5ea;
+    vertical-align: middle;
+}
+
+.episode-table td:last-child {
+    white-space: nowrap;
+}
+
+.btn-edit, .btn-delete {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+.btn-edit {
+    background: #007AFF;
+    color: white;
+}
+
+.btn-delete {
+    background: #FF3B30;
+    color: white;
+}
+
+/* Pastikan konten utama tidak overflow */
+body {
+    overflow-x: hidden;
+}
+
+/* ==================== TAMBAHAN UNTUK MENCEGAH SCROLL HORIZONTAL ==================== */
+html, body {
+    overflow-x: hidden;
+    width: 100%;
+}
+
+.modal-content,
+.cards-container,
+.upload-card,
+.projects-section {
+    max-width: 100%;
+}
+
+.table-wrapper {
+    overflow-x: auto; /* Scroll hanya di dalam wrapper tabel */
+}
+
+/* Deadline hanya 2 baris (asumsi kolom ke-4 pada tabel episode) */
+.episode-table td:nth-child(4) {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    max-width: 150px;
+}

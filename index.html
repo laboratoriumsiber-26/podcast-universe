@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podcast Universe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/index.css">
+</head>
+<body class="ios">
+    <!-- Overlay untuk efek gelap di atas background -->
+    <div class="overlay"></div>
+    
+    <!-- Status bar (tidak digunakan lagi, sesuai permintaan) -->
+    <!-- <div class="ios-status-bar"> ... </div>  (dihapus) -->
+    
+    <div class="container">
+        <header>
+            <h1 class="fade-in">🎙️ Podcast Universe</h1>
+            <div class="menu-container">
+                <button class="menu-btn" id="menuToggle" aria-label="Menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <a href="login-admin.html" class="dropdown-item">Admin</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sapaan dan jam digital -->
+        <div class="greeting-time fade-in">
+            <div class="greeting" id="greeting"></div>
+            <div class="time-date">
+                <span id="liveTime"></span>
+                <span id="liveDate"></span>
+            </div>
+        </div>
+
+        <!-- Carousel podcast -->
+        <div class="carousel-container fade-in">
+            <div id="podcastList" class="podcast-carousel">
+                <div class="loading">Memuat podcast...</div>
+            </div>
+            <div class="carousel-dots" id="carouselDots"></div>
+        </div>
+    </div>
+
+    <script src="js/index.js"></script>
+</body>
+</html>

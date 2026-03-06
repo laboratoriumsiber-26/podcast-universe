@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title id="page-title">Podcast - Production Suite</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.11/dist/dotlottie-wc.js" type="module"></script>
+    <link rel="stylesheet" href="css/dashboard.css">
+    <style>
+        /* Memastikan leaderboard table tidak menyebabkan scroll horizontal */
+        .leaderboard-table {
+            font-size: 12px;
+        }
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 6px 4px;
+            white-space: nowrap;
+        }
+        /* Atur lebar modal leaderboard agar cukup */
+        .modal-leaderboard {
+            max-width: 1200px;
+            width: 95%;
+        }
+        .table-wrapper {
+            overflow-x: hidden;
+        }
+        .leaderboard-table {
+            width: 100%;
+            table-layout: fixed;
+        }
+        .leaderboard-table th, .leaderboard-table td {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        /* Ikon deadline */
+        .deadline-icon {
+            margin-right: 5px;
+            color: #FF9800;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-screen" style="display: none;">
+        <dotlottie-wc src="https://lottie.host/aef38f57-a813-4934-ab2e-c6814e09087e/Z2ytGJlIzn.lottie" autoplay loop></dotlottie-wc>
+    </div>
+
+    <!-- HALAMAN LOGIN -->
+    <div id="login-page" style="height:100vh; display:flex; justify-content:center; align-items:center; background: #000; position: relative;">
+        <a href="index.html" class="back-to-podcast-btn" style="position: absolute; top: 20px; left: 30px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: white; padding: 10px 20px; border-radius: 30px; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.3);">
+            <i class="fa-solid fa-arrow-left"></i> Daftar Podcast
+        </a>
+        <button class="login-monitor-btn" onclick="window.enterMonitoring()" style="position: absolute; top: 20px; right: 30px; background: #6c5ce7; color: white; padding: 10px 18px; border-radius: 30px; font-weight: 600; cursor: pointer; border: none; display: flex; align-items: center; gap: 8px; z-index: 100;">
+            <i class="fa-solid fa-eye"></i> 🔍 Monitoring
+        </button>
+        <div style="background:white; padding:35px; border-radius:30px; width:320px; text-align:center;">
+            <h2 id="login-title" style="margin-bottom:20px"> Podcast</h2>
+            <input type="text" id="username" name="username" placeholder="Nama Lengkap / Username" autocomplete="username" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; margin-bottom:10px;">
+            <input type="password" id="password" name="password" placeholder="Password" autocomplete="current-password" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; margin-bottom:20px;">
+            <button class="btn-main" style="width:100%;" onclick="window.handleLogin()">Sign In</button>
+            <p style="font-size:11px; color:#888; margin-top:15px;">Editor: nama depan/belakang/lengkap / user123</p>
+        </div>
+    </div>
+
+    <!-- HALAMAN DASHBOARD -->
+    <div id="dashboard-page" style="display: none;">
+        <!-- HEADER & SUMMARY -->
+        <div style="display:flex; justify-content:space-between; align-items:start; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <h2 id="dashboard-title" style="margin:0">Production Suite</h2>
+                <div id="greetings" style="margin-top:10px; font-weight:600; color:#555;"></div>
+                <div id="editor-score-container" style="margin-top:5px; font-size:14px; display: none;">
+                    🏆 Skor: <span id="score-value">0</span>
+                </div>
+                <div class="summary-bar">
+                    <div class="summary-item"><label>Total Editor</label><b id="sum-editor">0</b></div>
+                    <div class="summary-item"><label>Total Narasumber</label><b id="sum-subject">0</b></div>
+                    <div class="summary-item"><label>Total Videos</label><b id="sum-video">0</b></div>
+                    <div class="summary-item" id="deadline-warning-item" style="display:none;">
+                        <label class="deadline-warning-summary">⚠️ Near Deadline</label>
+                        <b id="sum-deadline-warning">0</b>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <a href="index.html" class="btn-main btn-gray" style="text-decoration: none;"><i class="fa-solid fa-arrow-left"></i> Podcast</a>
+                <button class="btn-main btn-gray" onclick="window.refreshData()"><i class="fa-solid fa-sync"></i></button>
+                <!-- Tombol Leaderboard telah dipindahkan ke admin-controls -->
+                <button class="btn-main" style="background:#333" onclick="window.handleLogout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- CHART & STATISTIK DASHBOARD -->
+        <div class="analytics-section">
+            <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+                <div class="chart-center-text">
+                    <b id="center-percent">0%</b>
+                    <span>FINALIZED</span>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card"><span>To Do</span><b id="stat-todo">0</b></div>
+                <div class="stat-card" style="border-left-color: #FFD60A;"><span>In Progress</span><b id="stat-progress">0</b></div>
+                <div class="stat-card" style="border-left-color: #5856D6;"><span>Review</span><b id="stat-review">0</b></div>
+                <div class="stat-card" style="border-left-color: #FF3B30;"><span>Revision</span><b id="stat-revision">0</b></div>
+                <div class="stat-card" style="border-left-color: #E67E22;"><span>Retake</span><b id="stat-retake">0</b></div>
+                <div class="stat-card" style="border-left-color: #34C759;"><span>Finalized</span><b id="stat-final">0</b></div>
+            </div>
+        </div>
+
+        <!-- FILTER & TOMBOL ACTION -->
+        <div style="display:flex; justify-content:space-between; margin-bottom: 8px; flex-wrap:wrap; gap:8px">
+            <div style="display:flex; gap:8px; flex-wrap: wrap; align-items:center;">
+                <input type="text" id="search-text" class="search-input" placeholder="Cari judul/narasumber..." style="padding:10px; border-radius:10px; border:1px solid #ddd; width:200px;">
+                <select id="f-subject" onchange="window.renderTable()" style="padding:10px; border-radius:10px; border:1px solid #ddd;">
+                    <option value="">All Narasumber</option>
+                </select>
+                <select id="f-editor" onchange="window.renderTable()" style="padding:10px; border-radius:10px; border:1px solid #ddd;">
+                    <option value="">All Editor</option>
+                </select>
+                <select id="f-status" onchange="window.renderTable()" style="padding:10px; border-radius:10px; border:1px solid #ddd;">
+                    <option value="">All Status</option>
+                </select>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap: wrap;">
+                <a id="global-material-link" href="#" target="_blank" class="btn-main btn-gray"><i class="fa-solid fa-cloud-arrow-down"></i> Material</a>
+                <button id="admin-wa-custom-btn" class="btn-main btn-wa hidden" onclick="openModal('modalWaCustom')"><i class="fa-brands fa-whatsapp"></i> Chat</button>
+                <div id="admin-controls" class="hidden" style="display:flex; gap:8px">
+                    <button class="btn-main" onclick="openNewProjectModal()">New Episode</button>
+                    <button class="btn-main" style="background:#333" onclick="openManagement()"><i class="fa-solid fa-gear"></i></button>
+                    <!-- Tombol Leaderboard dipindahkan ke sini -->
+                    <button class="btn-main btn-leaderboard" onclick="openLeaderboardModal()" style="background:#34C759; color:white;"><i class="fa-solid fa-trophy"></i> Leaderboard</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABEL PROJECT -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="select-all-header" style="width:30px; text-align:center;"><input type="checkbox" id="select-all-checkbox" onclick="toggleSelectAll(this.checked)"></th>
+                        <th>Title</th>
+                        <th>Narasumber</th>
+                        <th>Host</th>
+                        <th>Editor</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
+                        <th>RAW</th>
+                        <th>Res</th>
+                        <th>Rev</th>
+                        <th>Note</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="main-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- HALAMAN MONITORING -->
+    <div id="monitoring-page" style="display: none;">
+        <div class="monitoring-header">
+            <h2 class="monitoring-title" id="monitoring-title"><i class="fa-solid fa-eye"></i> <span id="monitoring-title-text">Monitoring Dashboard</span></h2>
+            <button class="btn-main btn-gray" onclick="window.backToLogin()"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+        </div>
+
+        <!-- SUMMARY BAR -->
+        <div class="summary-bar">
+            <div class="summary-item"><label>Total Editor</label><b id="mon-sum-editor">0</b></div>
+            <div class="summary-item"><label>Total Narasumber</label><b id="mon-sum-subject">0</b></div>
+            <div class="summary-item"><label>Total Videos</label><b id="mon-sum-video">0</b></div>
+        </div>
+
+        <!-- CHART & STATISTIK MONITORING -->
+        <div class="analytics-section" style="margin-bottom: 20px;">
+            <div class="chart-container">
+                <canvas id="statusChartMonitoring"></canvas>
+                <div class="chart-center-text">
+                    <b id="monitoring-center-percent">0%</b>
+                    <span>FINALIZED</span>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card"><span>To Do</span><b id="mon-stat-todo">0</b></div>
+                <div class="stat-card" style="border-left-color: var(--ios-yellow);"><span>In Progress</span><b id="mon-stat-progress">0</b></div>
+                <div class="stat-card" style="border-left-color: var(--ios-purple);"><span>Review</span><b id="mon-stat-review">0</b></div>
+                <div class="stat-card" style="border-left-color: var(--ios-red);"><span>Revision</span><b id="mon-stat-revision">0</b></div>
+                <div class="stat-card" style="border-left-color: var(--retake-color);"><span>Retake</span><b id="mon-stat-retake">0</b></div>
+                <div class="stat-card" style="border-left-color: var(--ios-green);"><span>Finalized</span><b id="mon-stat-final">0</b></div>
+            </div>
+        </div>
+
+        <!-- FILTER -->
+        <div style="display:flex; gap:8px; margin-bottom: 20px;">
+            <select id="mon-f-subject" onchange="window.renderMonitoringTable()" style="padding:10px; border-radius:10px; border:1px solid #ddd;"><option value="">All Narasumber</option></select>
+            <select id="mon-f-editor" onchange="window.renderMonitoringTable()" style="padding:10px; border-radius:10px; border:1px solid #ddd;"><option value="">All Editor</option></select>
+            <select id="mon-f-status" onchange="window.renderMonitoringTable()" style="padding:10px; border-radius:10px; border:1px solid #ddd;"><option value="">All Status</option></select>
+        </div>
+
+        <!-- TABEL -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr><th>Title</th><th>Narasumber</th><th>Host</th><th>Editor</th><th>Deadline</th><th>Status</th><th>RAW</th><th>Res</th><th>Rev</th><th>Note</th></tr>
+                </thead>
+                <tbody id="monitoring-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- FLOATING WA LOG -->
+    <div id="waLogFloat" class="wa-log-float hidden" onclick="window.toggleLogPopup()">
+        <i class="fa-brands fa-whatsapp"></i>
+        <span id="waLogBadge" class="wa-log-badge">0</span>
+    </div>
+    <div id="waLogPopup" class="log-popup" style="display: none;">
+        <div class="log-popup-header">
+            <h4><i class="fa-brands fa-whatsapp"></i> Log WhatsApp</h4><span class="log-popup-close" onclick="window.toggleLogPopup()">&times;</span>
+        </div>
+        <div class="log-popup-body" id="waLogBody"></div>
+    </div>
+
+    <!-- TOMBOL TOGGLE PANEL WHATSAPP -->
+    <button id="toggle-wa-panel-btn" class="hidden" style="position:fixed; right:0; top:150px; z-index:1000; background:#25D366; color:white; border:none; border-radius:5px 0 0 5px; padding:10px 12px; cursor:pointer; font-size:18px; box-shadow:0 2px 5px rgba(0,0,0,0.2);">💬</button>
+
+    <!-- PANEL WHATSAPP (tanpa personal chat) -->
+    <div id="wa-panel" style="position:fixed; right:0; top:150px; width:320px; background:white; border:1px solid #ddd; border-radius:8px 0 0 8px; box-shadow:0 5px 20px rgba(0,0,0,0.2); z-index:999; transform:translateX(100%); transition:transform 0.3s ease; display:flex; flex-direction:column; max-height:80vh;">
+        <div style="padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f9f9f9; border-radius:8px 0 0 0;">
+            <h3 style="margin:0; font-size:16px;">💬 WhatsApp Panel</h3>
+            <button id="close-wa-panel" style="background:none; border:none; font-size:18px; cursor:pointer; color:#666;">✕</button>
+        </div>
+        <div style="padding:15px; overflow-y:auto; flex:1;">
+            <!-- 1. Toggle notifikasi user -->
+            <div style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid #eee;">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <span style="font-weight:500;">🔔 Notifikasi User</span>
+                    <label class="switch">
+                        <input type="checkbox" id="user-notif-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <small style="color:#666; display:block; margin-top:5px;">Notif laporan ke admin tetap masuk</small>
+            </div>
+
+            <!-- 2. Broadcast Deadline (dengan ikon peringatan) -->
+            <div style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid #eee;">
+                <button id="send-deadline-btn" style="width:100%; padding:10px; background:#FF9800; color:white; border:none; border-radius:6px; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <i class="fa-solid fa-exclamation-triangle deadline-icon"></i> 📢 Broadcast Deadline
+                </button>
+                <small style="color:#666; display:block; margin-top:5px;">Mengingatkan project dengan deadline H-3 hingga H+0</small>
+            </div>
+
+            <!-- 3. Broadcast ke Semua Editor -->
+            <div style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid #eee;">
+                <textarea id="broadcast-all-message" placeholder="Tulis pesan broadcast ke semua editor..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; margin-bottom:8px; resize:vertical;" rows="2"></textarea>
+                <button id="send-broadcast-all-btn" style="width:100%; padding:10px; background:#2196F3; color:white; border:none; border-radius:6px; font-weight:500; cursor:pointer;">✉️ Kirim ke Semua Editor</button>
+            </div>
+        </div>
+        <div id="wa-panel-status" style="padding:8px; border-top:1px solid #eee; font-size:12px; color:#666; text-align:center; background:#f9f9f9;">Siap</div>
+    </div>
+
+    <!-- MODAL WHATSAPP CUSTOM -->
+    <div id="modalWaCustom" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width:400px;">
+            <h3>Kirim WhatsApp</h3>
+            <div class="input-group">
+                <label for="wa-recipient-select">Pilih Editor</label>
+                <select id="wa-recipient-select" onchange="window.handleWaRecipientChange()">
+                    <option value="">-- Pilih Editor --</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="wa-recipient-number">Nomor WhatsApp</label>
+                <input type="text" id="wa-recipient-number" placeholder="628xxx">
+            </div>
+            <div class="input-group">
+                <label for="wa-custom-message">Pesan</label>
+                <textarea id="wa-custom-message" style="height:150px;"></textarea>
+            </div>
+            <button class="btn-main btn-wa" style="width:100%;" onclick="window.sendCustomWA()">Kirim</button>
+            <button class="btn-main btn-gray" style="width:100%; margin-top:8px;" onclick="window.closeModal('modalWaCustom')">Batal</button>
+        </div>
+    </div>
+
+    <!-- MODAL ACTION (EDIT PROJECT) -->
+    <div id="modalAction" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Update Project</h3>
+            <div class="folder-buttons">
+                <button class="btn-main" style="background:#34C759" onclick="window.openFolder('res')"><i class="fa-solid fa-folder-open"></i> Result Folder</button>
+                <button class="btn-main" style="background:#000080" onclick="window.openFolder('rev')"><i class="fa-solid fa-folder-open"></i> Revision Folder</button>
+            </div>
+            <div class="input-group">
+                <label for="a-title">Title</label>
+                <input type="text" id="a-title">
+            </div>
+            <div class="input-group">
+                <label for="a-subject">Narasumber</label>
+                <select id="a-subject"></select>
+            </div>
+            <div class="input-group">
+                <label for="a-host">Host</label>
+                <input type="text" id="a-host">
+            </div>
+            <div class="input-group">
+                <label for="a-deadline">Deadline</label>
+                <input type="date" id="a-deadline">
+            </div>
+            <div class="input-group">
+                <label for="a-status">Status</label>
+                <select id="a-status" onchange="window.handleStatusChange()"></select>
+            </div>
+            <div class="input-group">
+                <label for="a-result">Link Result</label>
+                <input type="text" id="a-result">
+            </div>
+            <div class="input-group">
+                <label for="a-revision">Link Revision</label>
+                <input type="text" id="a-revision">
+            </div>
+            <div class="input-group">
+                <label for="a-note">Note</label>
+                <textarea id="a-note" rows="3"></textarea>
+            </div>
+            <div id="admin-action-area" class="hidden">
+                <div class="input-group">
+                    <label for="a-change-editor">Change Editor</label>
+                    <select id="a-change-editor"></select>
+                </div>
+                <button class="btn-main" style="width:100%; margin-bottom:10px" onclick="window.saveAction()">Save</button>
+                <button class="btn-main" style="background:#FF3B30; width:100%" onclick="window.deleteProject()">Delete</button>
+            </div>
+            <div id="editor-action-area" class="hidden">
+                <button class="btn-main" style="width:100%" onclick="window.saveAction()">Save</button>
+                <button class="btn-main" style="background:#FF3B30; width:100%; margin-top:8px;" onclick="window.rejectTask()">Tolak Tugas</button>
+            </div>
+            <button class="btn-main btn-gray" style="width:100%; margin-top:10px;" onclick="window.closeModal('modalAction')">Close</button>
+        </div>
+    </div>
+
+    <!-- MODAL NEW PROJECT -->
+    <div id="modalNewProject" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width:500px;">
+            <h3>New Episode</h3>
+            <div class="input-group">
+                <label for="n-title">Judul Episode</label>
+                <input type="text" id="n-title">
+            </div>
+            <div class="input-group">
+                <label for="n-subject">Narasumber</label>
+                <select id="n-subject"></select>
+            </div>
+            <div class="input-group">
+                <label for="n-host">Host</label>
+                <input type="text" id="n-host">
+            </div>
+            <div class="input-group">
+                <label for="n-editor">Editor PJ</label>
+                <select id="n-editor"></select>
+            </div>
+            <div class="input-group">
+                <label for="n-deadline">Deadline</label>
+                <input type="date" id="n-deadline">
+            </div>
+            <div class="input-group">
+                <label for="n-raw">RAW Link</label>
+                <input type="text" id="n-raw">
+            </div>
+            <button class="btn-main" style="width:100%;" onclick="window.saveNewProject()">Create Episode</button>
+            <button class="btn-main btn-gray" style="width:100%; margin-top:10px" onclick="window.closeModal('modalNewProject')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- MODAL MANAGEMENT -->
+    <div id="modalManagement" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Management Settings</h3>
+            <div class="mgmt-card">
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:15px;">
+                    <div class="input-group"><label>Global Material</label><input type="text" id="m-global"></div>
+                    <div class="input-group"><label>Folder Result</label><input type="text" id="m-result"></div>
+                    <div class="input-group"><label>Folder Revision</label><input type="text" id="m-rev"></div>
+                    <div class="input-group"><label>WA Revision</label><input type="text" id="m-wa-review" placeholder="628xxx,628yyy"></div>
+                    <div class="input-group"><label>WA Retake</label><input type="text" id="m-wa-retake"></div>
+                    <div class="input-group"><label>Admin WA</label><input type="text" id="m-admin-wa"></div>
+                    <div class="input-group"><label>Token Fontee</label><input type="text" id="m-fontee-token" placeholder="Token Fontee"></div>
+                    <div class="input-group"><label>Endpoint Fontee</label><input type="text" id="m-fontee-endpoint" value="https://api.fontee.com/send-message"></div>
+                    <div class="input-group"><label>Kode Negara</label><input type="text" id="m-country-code" value="62"></div>
+                </div>
+            </div>
+            <div class="mgmt-grid-2">
+                <div>
+                    <div class="mgmt-section-title">EDITORS</div>
+                    <div id="m-editor-list" style="max-height:250px; overflow-y:auto;"></div>
+                    <div class="mgmt-card" style="margin-top:10px;">
+                        <div class="input-group"><label>Nama</label><input type="text" id="m-new-editor-name"></div>
+                        <div class="input-group"><label>WA</label><input type="text" id="m-new-editor-wa"></div>
+                        <button class="btn-main" style="width:100%;" onclick="window.addEditor()">Tambah Editor</button>
+                    </div>
+                </div>
+                <div>
+                    <div class="mgmt-section-title">NARASUMBER</div>
+                    <div id="m-subject-list" style="max-height:250px; overflow-y:auto;"></div>
+                    <div class="mgmt-card" style="margin-top:10px;">
+                        <div class="input-group"><label>Narasumber Baru</label><input type="text" id="m-new-subject"></div>
+                        <button class="btn-main" style="width:100%;" onclick="window.addSubject()">Tambah</button>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-main" style="width:100%; margin-top:20px; background:#000;" onclick="window.saveManagement()">SAVE ALL</button>
+            <button class="btn-main btn-gray" style="width:100%; margin-top:10px;" onclick="window.closeModal('modalManagement')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- MODAL ADMIN SETTINGS -->
+    <div id="modalAdminSettings" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width:500px;">
+            <h3>Admin Settings</h3>
+            <div class="input-group"><label>Judul Halaman</label><input type="text" id="login-title-input" placeholder="Podcast Bicara"></div>
+            <div class="input-group"><label>Username Admin</label><input type="text" id="admin-username-input"></div>
+            <div class="input-group"><label>Password Admin</label><input type="text" id="admin-password-input"></div>
+            <div class="input-group"><label>Password Editor</label><input type="text" id="user-password-input" placeholder="user123"></div>
+            <button class="btn-main" style="width:100%;" onclick="window.saveAdminSettings()">Simpan</button>
+            <button class="btn-main btn-gray" style="width:100%; margin-top:10px;" onclick="window.closeModal('modalAdminSettings')">Batal</button>
+        </div>
+    </div>
+
+    <!-- MODAL LEADERBOARD -->
+    <div id="modalLeaderboard" class="modal" style="display: none;">
+        <div class="modal-content modal-leaderboard" style="max-width:1200px;">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-trophy"></i> Leaderboard Editor</h2>
+                <button class="close-modal" onclick="closeModal('modalLeaderboard')" style="background:none; border:none; font-size:28px; cursor:pointer;">&times;</button>
+            </div>
+            <div class="table-wrapper">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Peringkat</th>
+                            <th>Nama Editor</th>
+                            <th>Total Project</th>
+                            <th>Tepat Waktu</th>
+                            <th>Hari Terlambat</th>
+                            <th>Revisi</th>
+                            <th>Retake</th>
+                            <th>Skor</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-modal-body">
+                        <tr><td colspan="9" style="text-align:center;">Memuat...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/dashboard.js"></script>
+    <script>
+        // Tambahan agar panel WhatsApp kembali ke posisi awal saat klik di luar panel
+        document.addEventListener('click', function(event) {
+            const waPanel = document.getElementById('wa-panel');
+            const toggleBtn = document.getElementById('toggle-wa-panel-btn');
+            if (!waPanel || !toggleBtn) return;
+            // Jika panel terbuka (translateX(0px)) dan yang diklik bukan bagian dari panel atau tombol toggle
+            if (waPanel.style.transform === 'translateX(0px)' && !waPanel.contains(event.target) && !toggleBtn.contains(event.target)) {
+                waPanel.style.transform = 'translateX(100%)';
+            }
+        });
+
+        // ========== FUNGSIONALITAS PENCARIAN ==========
+        (function() {
+            // Simpan fungsi renderTable asli (dari dashboard.js)
+            const originalRenderTable = window.renderTable;
+
+            // Fungsi untuk memfilter baris berdasarkan teks (frontend)
+            function filterTableByText() {
+                const searchInput = document.getElementById('search-text');
+                if (!searchInput) return;
+                const searchText = searchInput.value.toLowerCase();
+                const tbody = document.getElementById('main-table-body');
+                if (!tbody) return;
+                const rows = tbody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    // Gabungkan teks dari semua sel (atau bisa difokuskan ke kolom tertentu)
+                    const rowText = row.textContent.toLowerCase();
+                    if (rowText.includes(searchText)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            // Override renderTable: panggil asli, lalu filter
+            window.renderTable = function() {
+                if (originalRenderTable) {
+                    originalRenderTable();
+                } else {
+                    console.warn('renderTable asli tidak ditemukan, filter hanya akan bekerja pada tabel statis');
+                }
+                filterTableByText();
+            };
+
+            // Event listener pada input pencarian (filter tanpa render ulang)
+            document.getElementById('search-text')?.addEventListener('input', filterTableByText);
+        })();
+    </script>
+</body>
+</html>

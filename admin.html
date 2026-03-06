@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin - Podcast Universe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <!-- Proteksi session -->
+    <script>
+        (function() {
+            const session = localStorage.getItem('adminSession');
+            if (!session) { window.location.href = 'login-admin.html'; return; }
+            try {
+                const sess = JSON.parse(session);
+                if (!sess.loginTime || Date.now() > sess.expires) {
+                    localStorage.removeItem('adminSession');
+                    window.location.href = 'login-admin.html';
+                }
+            } catch (e) {
+                localStorage.removeItem('adminSession');
+                window.location.href = 'login-admin.html';
+            }
+        })();
+    </script>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="fa-solid fa-crown"></i> Super Admin Panel</h1>
+            <div>
+                <a href="index.html" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Kembali</a>
+                <button class="btn btn-secondary" onclick="refreshData()"><i class="fa-solid fa-sync"></i> Refresh</button>
+                <button id="logoutBtn" class="btn btn-danger"><i class="fa-solid fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
+
+        <!-- DAFTAR PODCAST -->
+        <div class="section" id="section-projects">
+            <h2><i class="fa-solid fa-list"></i> Daftar Podcast</h2>
+            <div class="search-box">
+                <i class="fa-solid fa-search"></i>
+                <input type="text" id="projectSearch" name="projectSearch" placeholder="Cari podcast...">
+            </div>
+            <div class="flex-row">
+                <button class="btn btn-danger" onclick="deleteSelectedPodcasts()"><i class="fa-solid fa-trash"></i> Hapus Terpilih</button>
+            </div>
+            <div class="project-cards-container">
+                <div id="projectCards" class="project-cards"></div>
+                <div id="projectDots" class="dots-container"></div>
+            </div>
+            <div class="flex-row justify-end mt-20">
+                <button class="btn btn-warning" onclick="undo()"><i class="fa-solid fa-undo"></i> Undo</button>
+            </div>
+        </div>
+
+        <!-- TAMBAH / EDIT PODCAST -->
+        <div class="section" id="section-add-project">
+            <h2><i class="fa-solid fa-plus-circle"></i> Tambah / Edit Podcast</h2>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="projectTitle">Judul Podcast</label>
+                    <input type="text" id="projectTitle" name="projectTitle" placeholder="Contoh: Podcast A">
+                </div>
+                <div class="form-group">
+                    <label for="projectDesc">Deskripsi</label>
+                    <textarea id="projectDesc" name="projectDesc" rows="3" placeholder="Deskripsi singkat..."></textarea>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="fileInput">Upload Cover</label>
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Klik untuk pilih gambar</span>
+                    <input type="file" id="fileInput" name="fileInput" accept="image/*" onchange="previewImage(event)" style="display:none;">
+                </div>
+                <div id="filePreview" style="display: none;">
+                    <i class="fa-solid fa-check-circle"></i>
+                    <span id="fileName"></span>
+                </div>
+            </div>
+            <div class="flex-row">
+                <button class="btn btn-primary" id="addProjectBtn" onclick="addOrUpdatePodcast()"><i class="fa-solid fa-plus"></i> Tambah Podcast</button>
+                <button class="btn btn-secondary" onclick="cancelEdit()" style="display: none;" id="cancelEditBtn">Batal</button>
+            </div>
+        </div>
+
+        <!-- MANAJEMEN EDITOR -->
+        <div class="section" id="section-editors">
+            <h2><i class="fa-solid fa-users"></i> Manajemen Editor</h2>
+            <div class="search-box">
+                <i class="fa-solid fa-search"></i>
+                <input type="text" id="editorSearch" name="editorSearch" placeholder="Cari editor...">
+            </div>
+            <div id="editorList" class="editor-list"></div>
+            <div class="flex-row">
+                <button class="btn btn-danger" onclick="deleteSelectedEditors()"><i class="fa-solid fa-trash"></i> Hapus Terpilih</button>
+            </div>
+            <h3>Tambah Editor Baru</h3>
+            <div class="add-editor-form">
+                <div>
+                    <label for="newEditorName">Nama Lengkap</label>
+                    <input type="text" id="newEditorName" name="newEditorName" placeholder="Nama lengkap">
+                </div>
+                <div>
+                    <label for="newEditorWA">Nomor WA</label>
+                    <input type="text" id="newEditorWA" name="newEditorWA" placeholder="628xxx">
+                </div>
+                <button onclick="addEditor()">Tambah Editor</button>
+            </div>
+            <div class="flex-row justify-end mt-20">
+                <button class="btn btn-success" onclick="saveEditors()"><i class="fa-solid fa-save"></i> Simpan</button>
+                <button class="btn btn-warning" onclick="undo()"><i class="fa-solid fa-undo"></i> Undo</button>
+            </div>
+        </div>
+
+        <!-- LEADERBOARD EDITOR -->
+        <div class="section" id="section-leaderboard">
+            <h2><i class="fa-solid fa-trophy"></i> Leaderboard Editor</h2>
+            <div class="form-group" style="max-width: 300px;">
+                <label for="leaderboardPodcast">Pilih Podcast</label>
+                <select id="leaderboardPodcast" class="form-control" onchange="loadLeaderboard()">
+                    <option value="">-- Pilih Podcast --</option>
+                </select>
+            </div>
+            <div class="table-wrapper">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Peringkat</th>
+                            <th>Nama Editor</th>
+                            <th>Total Project</th>
+                            <th>Tepat Waktu</th>
+                            <th>Hari Terlambat</th>
+                            <th>Revisi</th>
+                            <th>Retake</th>
+                            <th>Skor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PENGATURAN WHATSAPP -->
+        <div class="section" id="section-wa">
+            <h2><i class="fa-brands fa-whatsapp"></i> Pengaturan WhatsApp</h2>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="adminWA">Admin WA (pisah koma)</label>
+                    <input type="text" id="adminWA" name="adminWA" placeholder="628xxx,628yyy" value="">
+                </div>
+                <div class="form-group">
+                    <label for="waRevision">WA Revision (pisah koma)</label>
+                    <input type="text" id="waRevision" name="waRevision" placeholder="628xxx,628yyy" value="">
+                </div>
+                <div class="form-group">
+                    <label for="waRetake">WA Retake (pisah koma)</label>
+                    <input type="text" id="waRetake" name="waRetake" placeholder="628xxx,628yyy" value="">
+                </div>
+                <div class="form-group">
+                    <label for="tokenFontee">Token Fontee</label>
+                    <input type="text" id="tokenFontee" name="tokenFontee" placeholder="Masukkan token Fontee">
+                </div>
+                <div class="form-group">
+                    <label for="fonteeEndpoint">Endpoint Fontee</label>
+                    <input type="text" id="fonteeEndpoint" name="fonteeEndpoint" placeholder="https://api.fontee.com/send-message" value="https://api.fontee.com/send-message">
+                </div>
+                <div class="form-group">
+                    <label for="countryCode">Kode Negara (default 62)</label>
+                    <input type="text" id="countryCode" name="countryCode" placeholder="62" value="62">
+                </div>
+            </div>
+            <div class="flex-row justify-end mt-20">
+                <button class="btn btn-success" onclick="saveWhatsApp()"><i class="fa-solid fa-save"></i> Simpan</button>
+                <button class="btn btn-warning" onclick="undo()"><i class="fa-solid fa-undo"></i> Undo</button>
+            </div>
+        </div>
+
+        <!-- PENGATURAN PASSWORD -->
+        <div class="section" id="section-passwords">
+            <h2><i class="fa-solid fa-lock"></i> Pengaturan Password</h2>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="passwordUploader">Password Uploader</label>
+                    <input type="text" id="passwordUploader" name="passwordUploader" placeholder="upload123" value="upload123">
+                </div>
+                <div class="form-group">
+                    <label for="passwordEditor">Password Editor</label>
+                    <input type="text" id="passwordEditor" name="passwordEditor" placeholder="user123" value="user123">
+                </div>
+                <div class="form-group">
+                    <label for="passwordAdmin">Password Admin</label>
+                    <input type="text" id="passwordAdmin" name="passwordAdmin" placeholder="labsiber2026" value="labsiber2026">
+                </div>
+                <div class="form-group">
+                    <label for="usernameAdmin">Username Admin</label>
+                    <input type="text" id="usernameAdmin" name="usernameAdmin" placeholder="admin" value="admin">
+                </div>
+            </div>
+            <div class="flex-row justify-end mt-20">
+                <button class="btn btn-success" onclick="savePasswords()"><i class="fa-solid fa-save"></i> Simpan</button>
+                <button class="btn btn-warning" onclick="undo()"><i class="fa-solid fa-undo"></i> Undo</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>
