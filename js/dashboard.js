@@ -2,7 +2,7 @@
 Chart.register(ChartDataLabels);
 
 // ==================== KONFIGURASI & STATE ====================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzNAYOtAJWma2eAK5Sc0Acyp4mMVMI3CkBDNYar5tB-9dO-H8CmqIaWFaF7w498mBdUzQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtJG6-0AMD17UQf97Wb3IkjyrD29LmswlGajh2eMEseuO55AWqjrGtPpn_4ORT7JUyKA/exec';
 const urlParams = new URLSearchParams(window.location.search);
 const podcastId = urlParams.get('podcast');
 if (!podcastId) { alert('Podcast tidak dipilih'); window.location.href = 'index.html'; }
