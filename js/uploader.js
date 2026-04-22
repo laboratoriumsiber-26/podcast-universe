@@ -1,6 +1,5 @@
 // ==================== KONFIGURASI ====================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyXQI5sF8ZErj1g2okMCE_KLVi91vljcUBJbcdk2fFhydM5tqzAO_B3H_PIEpC_WxA_Hg/exec';
-const urlParams = new URLSearchParams(window.location.search);
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuTNChjKRB5JHP5lxbZB8qqRwLZHUpTxWyldX2UpFNQyyPIXatGZzUySlbLHjFO0XyBw/exec
 const podcastId = urlParams.get('podcast');
 if (!podcastId) {
     alert('Podcast tidak dipilih');
