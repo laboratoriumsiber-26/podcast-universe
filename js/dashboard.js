@@ -6,7 +6,7 @@ if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
 }
 
 // ==================== KONFIGURASI & STATE ====================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuTNChjKRB5JHP5lxbZB8qqRwLZHUpTxWyldX2UpFNQyyPIXatGZzUySlbLHjFO0XyBw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBlqXYNUHOgpCxxFcTB2NXeHa8MWxPzLz_L_NBa6UJLf-aDD-iSusxHm_7h3CxLt20Kw/exec';
 const urlParams = new URLSearchParams(window.location.search);
 const podcastId = urlParams.get('podcast');
 if (!podcastId) { alert('Podcast tidak dipilih'); window.location.href = 'index.html'; }
