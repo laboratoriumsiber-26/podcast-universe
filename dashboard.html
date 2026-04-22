@@ -3,601 +3,512 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-    <title>Podcast Production Suite</title>
-    <!-- Semua resource menggunakan HTTPS -->
+    <title id="page-title">Podcast - Production Suite</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.11/dist/dotlottie-wc.js" type="module"></script>
+    <link rel="stylesheet" href="css/dashboard.css">
     <style>
-        /* ========== GLOBAL STYLE ========== */
-        :root {
-            --ios-blue: #007AFF;
-            --ios-red: #FF3B30;
-            --ios-green: #34C759;
-            --ios-yellow: #FFCC00;
-            --ios-orange: #FF9500;
-            --ios-purple: #5856D6;
-            --ios-bg: #F2F2F7;
-            --ios-gray: #8E8E93;
-            --retake-color: #E67E22;
-            --wa-green: #25D366;
-            --deadline-warning: #FF3B30;
+        /* Memastikan leaderboard table tidak menyebabkan scroll horizontal */
+        .leaderboard-table {
+            font-size: 12px;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: var(--ios-bg);
-            color: #000;
-            -webkit-font-smoothing: antialiased;
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 6px 4px;
+            white-space: nowrap;
+        }
+        /* Atur lebar modal leaderboard agar cukup */
+        .modal-leaderboard {
+            max-width: 1200px;
+            width: 95%;
+        }
+        .table-wrapper {
             overflow-x: hidden;
         }
-        #loading-screen {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
-            z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center;
+        .leaderboard-table {
+            width: 100%;
+            table-layout: fixed;
         }
-        #dashboard-page, #monitoring-page { display: none; padding: 20px; max-width: 1600px; margin: auto; }
-        .summary-bar {
-            display: flex; gap: 20px; margin: 15px 0 25px; background: white; padding: 15px 25px;
-            border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); width: fit-content; flex-wrap: wrap;
+        .leaderboard-table th, .leaderboard-table td {
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .summary-item { display: flex; flex-direction: column; }
-        .summary-item label { font-size: 10px; font-weight: 800; color: var(--ios-gray); text-transform: uppercase; letter-spacing: 0.5px; }
-        .summary-item b { font-size: 20px; color: #1c1c1e; }
-        .deadline-warning-summary { color: var(--deadline-warning) !important; }
-        .analytics-section { display: flex; gap: 15px; margin-bottom: 25px; align-items: stretch; flex-wrap: wrap; }
-        .chart-container {
-            position: relative; background: white; padding: 20px; border-radius: 24px;
-            width: 220px; height: 220px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); flex-shrink: 0;
-        }
-        .chart-center-text {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            text-align: center; pointer-events: none; width: 100%;
-        }
-        .chart-center-text b { font-size: 32px; font-weight: 800; display: block; }
-        .chart-center-text span { font-size: 10px; font-weight: 800; color: var(--ios-green); text-transform: uppercase; }
-        .stats-grid {
-            display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; flex-grow: 1;
-        }
-        .stat-card {
-            background: white; padding: 20px 10px; border-radius: 20px; border-left: 6px solid var(--ios-blue);
-            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-        }
-        .stat-card span { font-size: 10px; font-weight: 800; color: var(--ios-gray); text-transform: uppercase; margin-bottom: 8px; }
-        .stat-card b { font-size: 40px; line-height: 1; font-weight: 700; }
-        .table-container { background: transparent; overflow-x: auto; padding-bottom: 20px; }
-        table { width: 100%; border-collapse: separate; border-spacing: 0 8px; min-width: 1300px; }
-        th { padding: 10px 20px; text-align: left; font-size: 10px; color: #888; text-transform: uppercase; }
-        td { padding: 15px 20px; background: white; font-size: 13px; border: none; }
-        td:first-child { border-radius: 15px 0 0 15px; }
-        td:last-child { border-radius: 0 15px 15px 0; }
-        .deadline-warning { color: var(--deadline-warning) !important; font-weight: 800; position: relative; }
-        .deadline-warning::after { content: " ⚠️"; font-size: 12px; }
-        .btn-main {
-            background: var(--ios-blue); color: white; border: none; padding: 10px 18px; border-radius: 12px;
-            font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
-            font-size: 13px; text-decoration: none; justify-content: center; transition: 0.2s;
-        }
-        .btn-main:hover { background: #005bbf; transform: scale(0.98); }
-        .btn-gray { background: #E9E9EB; color: #000; }
-        .btn-wa { background: var(--wa-green); }
-        .pill {
-            padding: 5px 10px; border-radius: 8px; font-size: 9px; font-weight: 800;
-            text-transform: uppercase; color: white; text-align: center; display: inline-block; min-width: 80px;
-        }
-        @keyframes blink-red {
-            0% { background-color: var(--ios-red); }
-            50% { background-color: #ff7675; }
-            100% { background-color: var(--ios-red); }
-        }
-        .pill-revision { animation: blink-red 0.8s infinite !important; background-color: var(--ios-red) !important; }
-        .modal {
-            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
-            width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px);
-            align-items: center; justify-content: center;
-        }
-        .modal-content {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: white; padding: 25px; width: 95%; max-width: 750px;
-            border-radius: 30px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-        }
-        .input-group { margin-bottom: 16px; }
-        .input-group label { display: block; font-size: 10px; font-weight: 700; color: var(--ios-gray); margin-bottom: 4px; text-transform: uppercase; }
-        .input-group input, .input-group select, .input-group textarea {
-            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd;
-            outline: none; font-size: 14px; background: white;
-        }
-        .input-group input:focus, .input-group select:focus { border-color: var(--ios-blue); }
-        .folder-buttons { display: flex; gap: 10px; margin-bottom: 15px; }
-        .mgmt-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .list-item-row { display: flex; gap: 8px; background: #fff; padding: 10px; border-radius: 12px; margin-bottom: 8px; border: 1px solid #f0f0f0; align-items: center; }
-        .list-item-row input { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #eee; }
-        .hidden { display: none !important; }
-        .wa-log-float {
-            position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px;
-            background: var(--wa-green); border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 30px; cursor: pointer; z-index: 999; transition: transform 0.2s;
-        }
-        .wa-log-badge {
-            position: absolute; top: -5px; right: -5px; background: var(--ios-red);
-            color: white; border-radius: 20px; padding: 2px 8px; font-size: 12px; font-weight: bold;
-        }
-        .log-popup {
-            position: fixed; bottom: 100px; right: 30px; width: 500px; max-width: 90vw;
-            max-height: 70vh; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            z-index: 1000; display: none; flex-direction: column; overflow: hidden;
-        }
-        .log-popup-header { background: var(--wa-green); color: white; padding: 12px 20px; display: flex; justify-content: space-between; }
-        .log-popup-body { padding: 15px; overflow-y: auto; background: #fafafa; font-size: 12px; }
-        .log-table td { background: transparent; padding: 6px 4px; }
-        .log-success { color: var(--ios-green); font-weight: bold; }
-        .log-failed { color: var(--ios-red); font-weight: bold; }
-        .note-cell { max-width: 220px; min-width: 160px; }
-        .note-text {
-            display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
-            overflow: hidden; word-break: break-word; font-size: 12px;
-        }
-        .note-text.expanded { -webkit-line-clamp: unset; display: block; }
-        .note-more-btn { background: none; border: none; color: var(--ios-blue); font-size: 10px; cursor: pointer; text-decoration: underline; margin-top: 4px; }
-        .switch { position: relative; display: inline-block; width: 46px; height: 20px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc; transition: .4s; border-radius: 20px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px;
-            background-color: white; transition: .4s; border-radius: 50%;
-        }
-        input:checked + .slider { background-color: #25D366; }
-        input:checked + .slider:before { transform: translateX(26px); }
-        .leaderboard-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .leaderboard-table th { background: #f2f2f7; color: #8e8e93; padding: 10px; text-align: left; }
-        .leaderboard-table td { padding: 10px; border-bottom: 1px solid #e5e5ea; background: white; }
-        .modal-leaderboard { max-width: 1200px; width: 95%; }
-        @media (max-width: 768px) {
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .analytics-section { flex-direction: column; align-items: center; }
-            .mgmt-grid-2 { grid-template-columns: 1fr; }
-            table, .leaderboard-table { min-width: 0; }
-            td:before { content: attr(data-label); font-weight: 600; color: var(--ios-gray); text-transform: uppercase; font-size: 10px; margin-right: 10px; }
-            td { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-            tr { display: block; margin-bottom: 15px; background: white; border-radius: 20px; }
-            thead { display: none; }
+        /* Ikon deadline */
+        .deadline-icon {
+            margin-right: 5px;
+            color: #FF9800;
         }
     </style>
 </head>
 <body>
-<div id="loading-screen" style="display: none;">
-    <dotlottie-wc src="https://lottie.host/aef38f57-a813-4934-ab2e-c6814e09087e/Z2ytGJlIzn.lottie" autoplay loop></dotlottie-wc>
-</div>
-
-<!-- HALAMAN LOGIN -->
-<div id="login-page" style="height:100vh; display:flex; justify-content:center; align-items:center; background:#000; position:relative;">
-    <a href="index.html" style="position:absolute; top:20px; left:30px; background:rgba(255,255,255,0.2); backdrop-filter:blur(10px); color:white; padding:10px 20px; border-radius:30px; text-decoration:none; font-weight:600;">
-        <i class="fa-solid fa-arrow-left"></i> Daftar Podcast
-    </a>
-    <button onclick="window.enterMonitoring()" style="position:absolute; top:20px; right:30px; background:#6c5ce7; color:white; padding:10px 18px; border-radius:30px; font-weight:600; border:none; cursor:pointer;">
-        <i class="fa-solid fa-eye"></i> Monitoring
-    </button>
-    <div style="background:white; padding:35px; border-radius:30px; width:320px; text-align:center;">
-        <h2 id="login-title" style="margin-bottom:20px"> Podcast</h2>
-        <input type="text" id="username" placeholder="Nama Lengkap / Username" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; margin-bottom:10px;">
-        <input type="password" id="password" placeholder="Password" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; margin-bottom:20px;">
-        <button class="btn-main" style="width:100%;" onclick="window.handleLogin()">Sign In</button>
-        <p style="font-size:11px; color:#888; margin-top:15px;">Editor: nama depan/belakang/lengkap / user123</p>
+    <div id="loading-screen" style="display: none;">
+        <dotlottie-wc src="https://lottie.host/aef38f57-a813-4934-ab2e-c6814e09087e/Z2ytGJlIzn.lottie" autoplay loop></dotlottie-wc>
     </div>
-</div>
 
-<!-- DASHBOARD PAGE -->
-<div id="dashboard-page" style="display:none;">
-    <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
-        <div>
-            <h2 id="dashboard-title">Production Suite</h2>
-            <div id="greetings" style="margin-top:8px; font-weight:600;"></div>
-            <div id="editor-score-container" style="margin-top:5px; font-size:14px; display:none;">🏆 Skor: <span id="score-value">0</span></div>
-            <div class="summary-bar">
-                <div class="summary-item"><label>Total Editor</label><b id="sum-editor">0</b></div>
-                <div class="summary-item"><label>Total Narasumber</label><b id="sum-subject">0</b></div>
-                <div class="summary-item"><label>Total Videos</label><b id="sum-video">0</b></div>
-                <div class="summary-item" id="deadline-warning-item" style="display:none;"><label class="deadline-warning-summary">⚠️ Near Deadline</label><b id="sum-deadline-warning">0</b></div>
+    <!-- HALAMAN LOGIN -->
+    <div id="login-page" style="height:100vh; display:flex; justify-content:center; align-items:center; background: #000; position: relative;">
+        <a href="index.html" class="back-to-podcast-btn" style="position: absolute; top: 20px; left: 30px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: white; padding: 10px 20px; border-radius: 30px; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.3);">
+            <i class="fa-solid fa-arrow-left"></i> Daftar Podcast
+        </a>
+        <button class="login-monitor-btn" onclick="window.enterMonitoring()" style="position: absolute; top: 20px; right: 30px; background: #6c5ce7; color: white; padding: 10px 18px; border-radius: 30px; font-weight: 600; cursor: pointer; border: none; display: flex; align-items: center; gap: 8px; z-index: 100;">
+            <i class="fa-solid fa-eye"></i> 🔍 Monitoring
+        </button>
+        <div style="background:white; padding:35px; border-radius:30px; width:320px; text-align:center;">
+            <h2 id="login-title" style="margin-bottom:20px"> Podcast</h2>
+            <input type="text" id="username" name="username" placeholder="Nama Lengkap / Username" autocomplete="username" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; margin-bottom:10px;">
+            <input type="password" id="password" name="password" placeholder="Password" autocomplete="current-password" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; margin-bottom:20px;">
+            <button class="btn-main" style="width:100%;" onclick="window.handleLogin()">Sign In</button>
+            <p style="font-size:11px; color:#888; margin-top:15px;">Editor: nama depan/belakang/lengkap / user123</p>
+        </div>
+    </div>
+
+    <!-- HALAMAN DASHBOARD -->
+    <div id="dashboard-page" style="display: none;">
+        <!-- HEADER & SUMMARY -->
+        <div style="display:flex; justify-content:space-between; align-items:start; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <h2 id="dashboard-title" style="margin:0">Production Suite</h2>
+                <div id="greetings" style="margin-top:10px; font-weight:600; color:#555;"></div>
+                <div id="editor-score-container" style="margin-top:5px; font-size:14px; display: none;">
+                    🏆 Skor: <span id="score-value">0</span>
+                </div>
+                <div class="summary-bar">
+                    <div class="summary-item"><label>Total Editor</label><b id="sum-editor">0</b></div>
+                    <div class="summary-item"><label>Total Narasumber</label><b id="sum-subject">0</b></div>
+                    <div class="summary-item"><label>Total Videos</label><b id="sum-video">0</b></div>
+                    <div class="summary-item" id="deadline-warning-item" style="display:none;">
+                        <label class="deadline-warning-summary">⚠️ Near Deadline</label>
+                        <b id="sum-deadline-warning">0</b>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <a href="index.html" class="btn-main btn-gray" style="text-decoration: none;"><i class="fa-solid fa-arrow-left"></i> Podcast</a>
+                <button class="btn-main btn-gray" onclick="window.refreshData()"><i class="fa-solid fa-sync"></i></button>
+                <!-- Tombol Leaderboard telah dipindahkan ke admin-controls -->
+                <button class="btn-main" style="background:#333" onclick="window.handleLogout()">Logout</button>
             </div>
         </div>
-        <div style="display:flex; gap:10px;">
-            <a href="index.html" class="btn-main btn-gray" style="text-decoration:none;"><i class="fa-solid fa-arrow-left"></i> Podcast</a>
-            <button class="btn-main btn-gray" onclick="window.refreshData()"><i class="fa-solid fa-sync"></i></button>
-            <button class="btn-main" style="background:#333" onclick="window.handleLogout()">Logout</button>
+
+        <!-- CHART & STATISTIK DASHBOARD -->
+        <div class="analytics-section">
+            <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+                <div class="chart-center-text">
+                    <b id="center-percent">0%</b>
+                    <span>FINALIZED</span>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card"><span>To Do</span><b id="stat-todo">0</b></div>
+                <div class="stat-card" style="border-left-color: #FFD60A;"><span>In Progress</span><b id="stat-progress">0</b></div>
+                <div class="stat-card" style="border-left-color: #5856D6;"><span>Review</span><b id="stat-review">0</b></div>
+                <div class="stat-card" style="border-left-color: #FF3B30;"><span>Revision</span><b id="stat-revision">0</b></div>
+                <div class="stat-card" style="border-left-color: #E67E22;"><span>Retake</span><b id="stat-retake">0</b></div>
+                <div class="stat-card" style="border-left-color: #34C759;"><span>Finalized</span><b id="stat-final">0</b></div>
+            </div>
+        </div>
+
+        <!-- FILTER & TOMBOL ACTION -->
+        <div style="display:flex; justify-content:space-between; margin-bottom: 8px; flex-wrap:wrap; gap:8px">
+            <div style="display:flex; gap:8px; flex-wrap: wrap; align-items:center;">
+                <input type="text" id="search-text" class="search-input" placeholder="Cari judul/narasumber..." style="padding:10px; border-radius:10px; border:1px solid #ddd; width:200px;">
+                <select id="f-subject" onchange="window.renderTable()" style="padding:10px; border-radius:10px; border:1px solid #ddd;">
+                    <option value="">All Narasumber</option>
+                </select>
+                <select id="f-editor" onchange="window.renderTable()" style="padding:10px; border-radius:10px; border:1px solid #ddd;">
+                    <option value="">All Editor</option>
+                </select>
+                <select id="f-status" onchange="window.renderTable()" style="padding:10px; border-radius:10px; border:1px solid #ddd;">
+                    <option value="">All Status</option>
+                </select>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap: wrap;">
+                <a id="global-material-link" href="#" target="_blank" class="btn-main btn-gray"><i class="fa-solid fa-cloud-arrow-down"></i> Material</a>
+                <button id="admin-wa-custom-btn" class="btn-main btn-wa hidden" onclick="openModal('modalWaCustom')"><i class="fa-brands fa-whatsapp"></i> Chat</button>
+                <div id="admin-controls" class="hidden" style="display:flex; gap:8px">
+                    <button class="btn-main" onclick="openNewProjectModal()">New Episode</button>
+                    <button class="btn-main" style="background:#333" onclick="openManagement()"><i class="fa-solid fa-gear"></i></button>
+                    <!-- Tombol Leaderboard dipindahkan ke sini -->
+                    <button class="btn-main btn-leaderboard" onclick="openLeaderboardModal()" style="background:#34C759; color:white;"><i class="fa-solid fa-trophy"></i> Leaderboard</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABEL PROJECT -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="select-all-header" style="width:30px; text-align:center;"><input type="checkbox" id="select-all-checkbox" onclick="toggleSelectAll(this.checked)"></th>
+                        <th>Title</th>
+                        <th>Narasumber</th>
+                        <th>Host</th>
+                        <th>Editor</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
+                        <th>RAW</th>
+                        <th>Res</th>
+                        <th>Rev</th>
+                        <th>Note</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="main-table-body"></tbody>
+            </table>
         </div>
     </div>
 
-    <div class="analytics-section">
-        <div class="chart-container"><canvas id="statusChart"></canvas><div class="chart-center-text"><b id="center-percent">0%</b><span>FINALIZED</span></div></div>
-        <div class="stats-grid">
-            <div class="stat-card"><span>To Do</span><b id="stat-todo">0</b></div>
-            <div class="stat-card" style="border-left-color:#FFD60A;"><span>In Progress</span><b id="stat-progress">0</b></div>
-            <div class="stat-card" style="border-left-color:#5856D6;"><span>Review</span><b id="stat-review">0</b></div>
-            <div class="stat-card" style="border-left-color:#FF3B30;"><span>Revision</span><b id="stat-revision">0</b></div>
-            <div class="stat-card" style="border-left-color:#E67E22;"><span>Retake</span><b id="stat-retake">0</b></div>
-            <div class="stat-card" style="border-left-color:#34C759;"><span>Finalized</span><b id="stat-final">0</b></div>
+    <!-- HALAMAN MONITORING -->
+    <div id="monitoring-page" style="display: none;">
+        <div class="monitoring-header">
+            <h2 class="monitoring-title" id="monitoring-title"><i class="fa-solid fa-eye"></i> <span id="monitoring-title-text">Monitoring Dashboard</span></h2>
+            <button class="btn-main btn-gray" onclick="window.backToLogin()"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+        </div>
+
+        <!-- SUMMARY BAR -->
+        <div class="summary-bar">
+            <div class="summary-item"><label>Total Editor</label><b id="mon-sum-editor">0</b></div>
+            <div class="summary-item"><label>Total Narasumber</label><b id="mon-sum-subject">0</b></div>
+            <div class="summary-item"><label>Total Videos</label><b id="mon-sum-video">0</b></div>
+        </div>
+
+        <!-- CHART & STATISTIK MONITORING -->
+        <div class="analytics-section" style="margin-bottom: 20px;">
+            <div class="chart-container">
+                <canvas id="statusChartMonitoring"></canvas>
+                <div class="chart-center-text">
+                    <b id="monitoring-center-percent">0%</b>
+                    <span>FINALIZED</span>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card"><span>To Do</span><b id="mon-stat-todo">0</b></div>
+                <div class="stat-card" style="border-left-color: var(--ios-yellow);"><span>In Progress</span><b id="mon-stat-progress">0</b></div>
+                <div class="stat-card" style="border-left-color: var(--ios-purple);"><span>Review</span><b id="mon-stat-review">0</b></div>
+                <div class="stat-card" style="border-left-color: var(--ios-red);"><span>Revision</span><b id="mon-stat-revision">0</b></div>
+                <div class="stat-card" style="border-left-color: var(--retake-color);"><span>Retake</span><b id="mon-stat-retake">0</b></div>
+                <div class="stat-card" style="border-left-color: var(--ios-green);"><span>Finalized</span><b id="mon-stat-final">0</b></div>
+            </div>
+        </div>
+
+        <!-- FILTER -->
+        <div style="display:flex; gap:8px; margin-bottom: 20px;">
+            <select id="mon-f-subject" onchange="window.renderMonitoringTable()" style="padding:10px; border-radius:10px; border:1px solid #ddd;"><option value="">All Narasumber</option></select>
+            <select id="mon-f-editor" onchange="window.renderMonitoringTable()" style="padding:10px; border-radius:10px; border:1px solid #ddd;"><option value="">All Editor</option></select>
+            <select id="mon-f-status" onchange="window.renderMonitoringTable()" style="padding:10px; border-radius:10px; border:1px solid #ddd;"><option value="">All Status</option></select>
+        </div>
+
+        <!-- TABEL -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr><th>Title</th><th>Narasumber</th><th>Host</th><th>Editor</th><th>Deadline</th><th>Status</th><th>RAW</th><th>Res</th><th>Rev</th><th>Note</th></tr>
+                </thead>
+                <tbody id="monitoring-table-body"></tbody>
+            </table>
         </div>
     </div>
 
-    <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <input type="text" id="search-text" placeholder="Cari judul/narasumber..." style="padding:10px; border-radius:30px; border:1px solid #ddd; width:200px;">
-            <select id="f-subject" onchange="window.renderTable()" style="padding:10px; border-radius:30px; border:1px solid #ddd;"></select>
-            <select id="f-editor" onchange="window.renderTable()" style="padding:10px; border-radius:30px; border:1px solid #ddd;"></select>
-            <select id="f-status" onchange="window.renderTable()" style="padding:10px; border-radius:30px; border:1px solid #ddd;"></select>
+    <!-- FLOATING WA LOG -->
+    <div id="waLogFloat" class="wa-log-float hidden" onclick="window.toggleLogPopup()">
+        <i class="fa-brands fa-whatsapp"></i>
+        <span id="waLogBadge" class="wa-log-badge">0</span>
+    </div>
+    <div id="waLogPopup" class="log-popup" style="display: none;">
+        <div class="log-popup-header">
+            <h4><i class="fa-brands fa-whatsapp"></i> Log WhatsApp</h4><span class="log-popup-close" onclick="window.toggleLogPopup()">&times;</span>
         </div>
-        <div style="display:flex; gap:8px;">
-            <a id="global-material-link" href="#" target="_blank" class="btn-main btn-gray"><i class="fa-solid fa-cloud-arrow-down"></i> Material</a>
-            <button id="admin-wa-custom-btn" class="btn-main btn-wa hidden" onclick="openModal('modalWaCustom')"><i class="fa-brands fa-whatsapp"></i> Chat</button>
-            <div id="admin-controls" class="hidden" style="display:flex; gap:8px;">
-                <button class="btn-main" onclick="openNewProjectModal()">New Episode</button>
-                <button class="btn-main" style="background:#333" onclick="openManagement()"><i class="fa-solid fa-gear"></i></button>
-                <button class="btn-main" style="background:#34C759" onclick="openLeaderboardModal()"><i class="fa-solid fa-trophy"></i> Leaderboard</button>
+        <div class="log-popup-body" id="waLogBody"></div>
+    </div>
+
+    <!-- TOMBOL TOGGLE PANEL WHATSAPP -->
+    <button id="toggle-wa-panel-btn" class="hidden" style="position:fixed; right:0; top:150px; z-index:1000; background:#25D366; color:white; border:none; border-radius:5px 0 0 5px; padding:10px 12px; cursor:pointer; font-size:18px; box-shadow:0 2px 5px rgba(0,0,0,0.2);">💬</button>
+
+    <!-- PANEL WHATSAPP (tanpa personal chat) -->
+    <div id="wa-panel" style="position:fixed; right:0; top:150px; width:320px; background:white; border:1px solid #ddd; border-radius:8px 0 0 8px; box-shadow:0 5px 20px rgba(0,0,0,0.2); z-index:999; transform:translateX(100%); transition:transform 0.3s ease; display:flex; flex-direction:column; max-height:80vh;">
+        <div style="padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:#f9f9f9; border-radius:8px 0 0 0;">
+            <h3 style="margin:0; font-size:16px;">💬 WhatsApp Panel</h3>
+            <button id="close-wa-panel" style="background:none; border:none; font-size:18px; cursor:pointer; color:#666;">✕</button>
+        </div>
+        <div style="padding:15px; overflow-y:auto; flex:1;">
+            <!-- 1. Toggle notifikasi user -->
+            <div style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid #eee;">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <span style="font-weight:500;">🔔 Notifikasi User</span>
+                    <label class="switch">
+                        <input type="checkbox" id="user-notif-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <small style="color:#666; display:block; margin-top:5px;">Notif laporan ke admin tetap masuk</small>
+            </div>
+
+            <!-- 2. Broadcast Deadline (dengan ikon peringatan) -->
+            <div style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid #eee;">
+                <button id="send-deadline-btn" style="width:100%; padding:10px; background:#FF9800; color:white; border:none; border-radius:6px; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <i class="fa-solid fa-exclamation-triangle deadline-icon"></i> 📢 Broadcast Deadline
+                </button>
+                <small style="color:#666; display:block; margin-top:5px;">Mengingatkan project dengan deadline H-3 hingga H+0</small>
+            </div>
+
+            <!-- 3. Broadcast ke Semua Editor -->
+            <div style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid #eee;">
+                <textarea id="broadcast-all-message" placeholder="Tulis pesan broadcast ke semua editor..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; margin-bottom:8px; resize:vertical;" rows="2"></textarea>
+                <button id="send-broadcast-all-btn" style="width:100%; padding:10px; background:#2196F3; color:white; border:none; border-radius:6px; font-weight:500; cursor:pointer;">✉️ Kirim ke Semua Editor</button>
+            </div>
+        </div>
+        <div id="wa-panel-status" style="padding:8px; border-top:1px solid #eee; font-size:12px; color:#666; text-align:center; background:#f9f9f9;">Siap</div>
+    </div>
+
+    <!-- MODAL WHATSAPP CUSTOM -->
+    <div id="modalWaCustom" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width:400px;">
+            <h3>Kirim WhatsApp</h3>
+            <div class="input-group">
+                <label for="wa-recipient-select">Pilih Editor</label>
+                <select id="wa-recipient-select" onchange="window.handleWaRecipientChange()">
+                    <option value="">-- Pilih Editor --</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="wa-recipient-number">Nomor WhatsApp</label>
+                <input type="text" id="wa-recipient-number" placeholder="628xxx">
+            </div>
+            <div class="input-group">
+                <label for="wa-custom-message">Pesan</label>
+                <textarea id="wa-custom-message" style="height:150px;"></textarea>
+            </div>
+            <button class="btn-main btn-wa" style="width:100%;" onclick="window.sendCustomWA()">Kirim</button>
+            <button class="btn-main btn-gray" style="width:100%; margin-top:8px;" onclick="window.closeModal('modalWaCustom')">Batal</button>
+        </div>
+    </div>
+
+    <!-- MODAL ACTION (EDIT PROJECT) -->
+    <div id="modalAction" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Update Project</h3>
+            <div class="folder-buttons">
+                <button class="btn-main" style="background:#34C759" onclick="window.openFolder('res')"><i class="fa-solid fa-folder-open"></i> Result Folder</button>
+                <button class="btn-main" style="background:#000080" onclick="window.openFolder('rev')"><i class="fa-solid fa-folder-open"></i> Revision Folder</button>
+            </div>
+            <div class="input-group">
+                <label for="a-title">Title</label>
+                <input type="text" id="a-title">
+            </div>
+            <div class="input-group">
+                <label for="a-subject">Narasumber</label>
+                <select id="a-subject"></select>
+            </div>
+            <div class="input-group">
+                <label for="a-host">Host</label>
+                <input type="text" id="a-host">
+            </div>
+            <div class="input-group">
+                <label for="a-deadline">Deadline</label>
+                <input type="date" id="a-deadline">
+            </div>
+            <div class="input-group">
+                <label for="a-status">Status</label>
+                <select id="a-status" onchange="window.handleStatusChange()"></select>
+            </div>
+            <div class="input-group">
+                <label for="a-result">Link Result</label>
+                <input type="text" id="a-result">
+            </div>
+            <div class="input-group">
+                <label for="a-revision">Link Revision</label>
+                <input type="text" id="a-revision">
+            </div>
+            <div class="input-group">
+                <label for="a-note">Note</label>
+                <textarea id="a-note" rows="3"></textarea>
+            </div>
+            <div id="admin-action-area" class="hidden">
+                <div class="input-group">
+                    <label for="a-change-editor">Change Editor</label>
+                    <select id="a-change-editor"></select>
+                </div>
+                <button class="btn-main" style="width:100%; margin-bottom:10px" onclick="window.saveAction()">Save</button>
+                <button class="btn-main" style="background:#FF3B30; width:100%" onclick="window.deleteProject()">Delete</button>
+            </div>
+            <div id="editor-action-area" class="hidden">
+                <button class="btn-main" style="width:100%" onclick="window.saveAction()">Save</button>
+                <button class="btn-main" style="background:#FF3B30; width:100%; margin-top:8px;" onclick="window.rejectTask()">Tolak Tugas</button>
+            </div>
+            <button class="btn-main btn-gray" style="width:100%; margin-top:10px;" onclick="window.closeModal('modalAction')">Close</button>
+        </div>
+    </div>
+
+    <!-- MODAL NEW PROJECT -->
+    <div id="modalNewProject" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width:500px;">
+            <h3>New Episode</h3>
+            <div class="input-group">
+                <label for="n-title">Judul Episode</label>
+                <input type="text" id="n-title">
+            </div>
+            <div class="input-group">
+                <label for="n-subject">Narasumber</label>
+                <select id="n-subject"></select>
+            </div>
+            <div class="input-group">
+                <label for="n-host">Host</label>
+                <input type="text" id="n-host">
+            </div>
+            <div class="input-group">
+                <label for="n-editor">Editor PJ</label>
+                <select id="n-editor"></select>
+            </div>
+            <div class="input-group">
+                <label for="n-deadline">Deadline</label>
+                <input type="date" id="n-deadline">
+            </div>
+            <div class="input-group">
+                <label for="n-raw">RAW Link</label>
+                <input type="text" id="n-raw">
+            </div>
+            <button class="btn-main" style="width:100%;" onclick="window.saveNewProject()">Create Episode</button>
+            <button class="btn-main btn-gray" style="width:100%; margin-top:10px" onclick="window.closeModal('modalNewProject')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- MODAL MANAGEMENT -->
+    <div id="modalManagement" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Management Settings</h3>
+            <div class="mgmt-card">
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:15px;">
+                    <div class="input-group"><label>Global Material</label><input type="text" id="m-global"></div>
+                    <div class="input-group"><label>Folder Result</label><input type="text" id="m-result"></div>
+                    <div class="input-group"><label>Folder Revision</label><input type="text" id="m-rev"></div>
+                    <div class="input-group"><label>WA Revision</label><input type="text" id="m-wa-review" placeholder="628xxx,628yyy"></div>
+                    <div class="input-group"><label>WA Retake</label><input type="text" id="m-wa-retake"></div>
+                    <div class="input-group"><label>Admin WA</label><input type="text" id="m-admin-wa"></div>
+                    <div class="input-group"><label>Token Fontee</label><input type="text" id="m-fontee-token" placeholder="Token Fontee"></div>
+                    <div class="input-group"><label>Endpoint Fontee</label><input type="text" id="m-fontee-endpoint" value="https://api.fontee.com/send-message"></div>
+                    <div class="input-group"><label>Kode Negara</label><input type="text" id="m-country-code" value="62"></div>
+                </div>
+            </div>
+            <div class="mgmt-grid-2">
+                <div>
+                    <div class="mgmt-section-title">EDITORS</div>
+                    <div id="m-editor-list" style="max-height:250px; overflow-y:auto;"></div>
+                    <div class="mgmt-card" style="margin-top:10px;">
+                        <div class="input-group"><label>Nama</label><input type="text" id="m-new-editor-name"></div>
+                        <div class="input-group"><label>WA</label><input type="text" id="m-new-editor-wa"></div>
+                        <button class="btn-main" style="width:100%;" onclick="window.addEditor()">Tambah Editor</button>
+                    </div>
+                </div>
+                <div>
+                    <div class="mgmt-section-title">NARASUMBER</div>
+                    <div id="m-subject-list" style="max-height:250px; overflow-y:auto;"></div>
+                    <div class="mgmt-card" style="margin-top:10px;">
+                        <div class="input-group"><label>Narasumber Baru</label><input type="text" id="m-new-subject"></div>
+                        <button class="btn-main" style="width:100%;" onclick="window.addSubject()">Tambah</button>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-main" style="width:100%; margin-top:20px; background:#000;" onclick="window.saveManagement()">SAVE ALL</button>
+            <button class="btn-main btn-gray" style="width:100%; margin-top:10px;" onclick="window.closeModal('modalManagement')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- MODAL ADMIN SETTINGS -->
+    <div id="modalAdminSettings" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width:500px;">
+            <h3>Admin Settings</h3>
+            <div class="input-group"><label>Judul Halaman</label><input type="text" id="login-title-input" placeholder="Podcast Bicara"></div>
+            <div class="input-group"><label>Username Admin</label><input type="text" id="admin-username-input"></div>
+            <div class="input-group"><label>Password Admin</label><input type="text" id="admin-password-input"></div>
+            <div class="input-group"><label>Password Editor</label><input type="text" id="user-password-input" placeholder="user123"></div>
+            <button class="btn-main" style="width:100%;" onclick="window.saveAdminSettings()">Simpan</button>
+            <button class="btn-main btn-gray" style="width:100%; margin-top:10px;" onclick="window.closeModal('modalAdminSettings')">Batal</button>
+        </div>
+    </div>
+
+    <!-- MODAL LEADERBOARD -->
+    <div id="modalLeaderboard" class="modal" style="display: none;">
+        <div class="modal-content modal-leaderboard" style="max-width:1200px;">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-trophy"></i> Leaderboard Editor</h2>
+                <button class="close-modal" onclick="closeModal('modalLeaderboard')" style="background:none; border:none; font-size:28px; cursor:pointer;">&times;</button>
+            </div>
+            <div class="table-wrapper">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Peringkat</th>
+                            <th>Nama Editor</th>
+                            <th>Total Project</th>
+                            <th>Tepat Waktu</th>
+                            <th>Hari Terlambat</th>
+                            <th>Revisi</th>
+                            <th>Retake</th>
+                            <th>Skor</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-modal-body">
+                        <tr><td colspan="9" style="text-align:center;">Memuat...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr><th style="width:30px"><input type="checkbox" id="select-all-checkbox" onclick="toggleSelectAll(this.checked)"></th><th>Title</th><th>Narasumber</th><th>Host</th><th>Editor</th><th>Deadline</th><th>Status</th><th>RAW</th><th>Res</th><th>Rev</th><th>Note</th><th>Action</th></tr>
-            </thead>
-            <tbody id="main-table-body"></tbody>
-        </table>
-    </div>
-</div>
-
-<!-- MONITORING PAGE -->
-<div id="monitoring-page" style="display:none; padding:20px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h2><i class="fa-solid fa-eye"></i> <span id="monitoring-title-text">Monitoring Dashboard</span></h2>
-        <button class="btn-main btn-gray" onclick="window.backToLogin()"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
-    </div>
-    <div class="summary-bar">
-        <div class="summary-item"><label>Total Editor</label><b id="mon-sum-editor">0</b></div>
-        <div class="summary-item"><label>Total Narasumber</label><b id="mon-sum-subject">0</b></div>
-        <div class="summary-item"><label>Total Videos</label><b id="mon-sum-video">0</b></div>
-    </div>
-    <div class="analytics-section">
-        <div class="chart-container"><canvas id="statusChartMonitoring"></canvas><div class="chart-center-text"><b id="monitoring-center-percent">0%</b><span>FINALIZED</span></div></div>
-        <div class="stats-grid">
-            <div class="stat-card"><span>To Do</span><b id="mon-stat-todo">0</b></div>
-            <div class="stat-card"><span>In Progress</span><b id="mon-stat-progress">0</b></div>
-            <div class="stat-card"><span>Review</span><b id="mon-stat-review">0</b></div>
-            <div class="stat-card"><span>Revision</span><b id="mon-stat-revision">0</b></div>
-            <div class="stat-card"><span>Retake</span><b id="mon-stat-retake">0</b></div>
-            <div class="stat-card"><span>Finalized</span><b id="mon-stat-final">0</b></div>
-        </div>
-    </div>
-    <div style="display:flex; gap:10px; margin-bottom:20px;">
-        <select id="mon-f-subject" onchange="window.renderMonitoringTable()"><option value="">All Narasumber</option></select>
-        <select id="mon-f-editor" onchange="window.renderMonitoringTable()"><option value="">All Editor</option></select>
-        <select id="mon-f-status" onchange="window.renderMonitoringTable()"><option value="">All Status</option></select>
-    </div>
-    <div class="table-container"><table><thead><tr><th>Title</th><th>Narasumber</th><th>Host</th><th>Editor</th><th>Deadline</th><th>Status</th><th>RAW</th><th>Res</th><th>Rev</th><th>Note</th></tr></thead><tbody id="monitoring-table-body"></tbody></table></div>
-</div>
-
-<!-- FLOATING WA LOG -->
-<div id="waLogFloat" class="wa-log-float hidden" onclick="window.toggleLogPopup()"><i class="fa-brands fa-whatsapp"></i><span id="waLogBadge" class="wa-log-badge">0</span></div>
-<div id="waLogPopup" class="log-popup" style="display:none;"><div class="log-popup-header"><h4><i class="fa-brands fa-whatsapp"></i> Log WhatsApp</h4><span onclick="window.toggleLogPopup()" style="cursor:pointer">&times;</span></div><div class="log-popup-body" id="waLogBody"></div></div>
-
-<button id="toggle-wa-panel-btn" class="hidden" style="position:fixed; right:0; top:150px; background:#25D366; color:white; border:none; border-radius:5px 0 0 5px; padding:10px 12px; cursor:pointer; z-index:1000;">💬</button>
-<div id="wa-panel" style="position:fixed; right:0; top:150px; width:320px; background:white; border-radius:12px 0 0 12px; box-shadow:0 5px 20px rgba(0,0,0,0.2); z-index:999; transform:translateX(100%); transition:0.3s; display:flex; flex-direction:column;">
-    <div style="padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;"><h3>💬 WA Panel</h3><button id="close-wa-panel" style="background:none; border:none; font-size:20px;">✕</button></div>
-    <div style="padding:15px;">
-        <div style="margin-bottom:20px;"><div style="display:flex; justify-content:space-between;"><span>🔔 Notifikasi User</span><label class="switch"><input type="checkbox" id="user-notif-toggle"><span class="slider"></span></label></div><small>Notif laporan ke admin tetap masuk</small></div>
-        <button id="send-deadline-btn" style="width:100%; background:#FF9800; color:white; border:none; border-radius:30px; padding:10px; margin-bottom:15px;"><i class="fa-solid fa-exclamation-triangle"></i> Broadcast Deadline</button>
-        <textarea id="broadcast-all-message" placeholder="Pesan broadcast ke semua editor..." rows="2" style="width:100%; padding:8px; border-radius:12px; border:1px solid #ddd; margin-bottom:8px;"></textarea>
-        <button id="send-broadcast-all-btn" style="width:100%; background:#2196F3; color:white; border:none; border-radius:30px; padding:10px;">✉️ Kirim ke Semua Editor</button>
-    </div>
-    <div id="wa-panel-status" style="padding:10px; text-align:center; font-size:12px; color:#666;">Siap</div>
-</div>
-
-<!-- MODALS -->
-<div id="modalWaCustom" class="modal"><div class="modal-content"><h3>Kirim WhatsApp</h3><div class="input-group"><label>Pilih Editor</label><select id="wa-recipient-select" onchange="window.handleWaRecipientChange()"></select></div><div class="input-group"><label>Nomor WA</label><input id="wa-recipient-number" placeholder="628xxx"></div><div class="input-group"><label>Pesan</label><textarea id="wa-custom-message" rows="4"></textarea></div><button class="btn-main btn-wa" onclick="window.sendCustomWA()">Kirim</button><button class="btn-main btn-gray" onclick="closeModal('modalWaCustom')">Batal</button></div></div>
-
-<div id="modalAction" class="modal"><div class="modal-content"><h3>Update Project</h3><div class="folder-buttons"><button class="btn-main" style="background:#34C759" onclick="window.openFolder('res')"><i class="fa-solid fa-folder-open"></i> Result Folder</button><button class="btn-main" style="background:#000080" onclick="window.openFolder('rev')"><i class="fa-solid fa-folder-open"></i> Revision Folder</button></div><div class="input-group"><label>Title</label><input id="a-title"></div><div class="input-group"><label>Narasumber</label><select id="a-subject"></select></div><div class="input-group"><label>Host</label><input id="a-host"></div><div class="input-group"><label>Deadline</label><input type="date" id="a-deadline"></div><div class="input-group"><label>Status</label><select id="a-status" onchange="window.handleStatusChange()"></select></div><div class="input-group"><label>Link Result</label><input id="a-result"></div><div class="input-group"><label>Link Revision</label><input id="a-revision"></div><div class="input-group"><label>Note</label><textarea id="a-note" rows="3"></textarea></div><div id="admin-action-area" class="hidden"><div class="input-group"><label>Change Editor</label><select id="a-change-editor"></select></div><button class="btn-main" style="width:100%; margin-bottom:10px" onclick="window.saveAction()">Save</button><button class="btn-main" style="background:#FF3B30; width:100%" onclick="window.deleteProject()">Delete</button></div><div id="editor-action-area" class="hidden"><button class="btn-main" style="width:100%" onclick="window.saveAction()">Save</button><button class="btn-main" style="background:#FF3B30; width:100%; margin-top:8px;" onclick="window.rejectTaskWarning()">Tolak Tugas</button></div><button class="btn-main btn-gray" style="width:100%; margin-top:10px;" onclick="window.closeModal('modalAction')">Close</button></div></div>
-
-<div id="modalNewProject" class="modal"><div class="modal-content"><h3>New Episode</h3><div class="input-group"><label>Judul Episode</label><input id="n-title"></div><div class="input-group"><label>Narasumber</label><select id="n-subject"></select></div><div class="input-group"><label>Host</label><input id="n-host"></div><div class="input-group"><label>Editor PJ</label><select id="n-editor"></select></div><div class="input-group"><label>Deadline</label><input type="date" id="n-deadline"></div><div class="input-group"><label>RAW Link</label><input id="n-raw"></div><button class="btn-main" onclick="window.saveNewProject()">Create Episode</button><button class="btn-main btn-gray" onclick="closeModal('modalNewProject')">Cancel</button></div></div>
-
-<div id="modalManagement" class="modal"><div class="modal-content"><h3>Management Settings</h3><div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:15px;"><div class="input-group"><label>Global Material</label><input id="m-global"></div><div class="input-group"><label>Folder Result</label><input id="m-result"></div><div class="input-group"><label>Folder Revision</label><input id="m-rev"></div><div class="input-group"><label>WA Revision</label><input id="m-wa-review" placeholder="628xxx,628yyy"></div><div class="input-group"><label>WA Retake</label><input id="m-wa-retake"></div><div class="input-group"><label>Admin WA</label><input id="m-admin-wa"></div><div class="input-group"><label>Token Fontee</label><input id="m-fontee-token"></div><div class="input-group"><label>Endpoint Fontee</label><input id="m-fontee-endpoint" value="https://api.fontee.com/send-message"></div><div class="input-group"><label>Kode Negara</label><input id="m-country-code" value="62"></div></div><div class="mgmt-grid-2"><div><div class="mgmt-section-title">EDITORS</div><div id="m-editor-list"></div><div style="margin-top:10px;"><div class="input-group"><label>Nama</label><input id="m-new-editor-name"></div><div class="input-group"><label>WA</label><input id="m-new-editor-wa"></div><button class="btn-main" onclick="window.addEditor()">Tambah Editor</button></div></div><div><div class="mgmt-section-title">NARASUMBER</div><div id="m-subject-list"></div><div style="margin-top:10px;"><div class="input-group"><label>Narasumber Baru</label><input id="m-new-subject"></div><button class="btn-main" onclick="window.addSubject()">Tambah</button></div></div></div><button class="btn-main" style="width:100%; margin-top:20px; background:#000;" onclick="window.saveManagement()">SAVE ALL</button><button class="btn-main btn-gray" onclick="closeModal('modalManagement')">Cancel</button></div></div>
-
-<div id="modalLeaderboard" class="modal"><div class="modal-content modal-leaderboard"><div style="display:flex; justify-content:space-between;"><h2><i class="fa-solid fa-trophy"></i> Leaderboard Editor</h2><button onclick="closeModal('modalLeaderboard')" style="background:none; border:none; font-size:28px;">&times;</button></div><div class="table-wrapper"><table class="leaderboard-table"><thead><tr><th>Peringkat</th><th>Nama Editor</th><th>Total Project</th><th>Tepat Waktu</th><th>Hari Terlambat</th><th>Revisi</th><th>Retake</th><th>Skor</th><th>Aksi</th></tr></thead><tbody id="leaderboard-modal-body"><tr><td colspan="9">Memuat...</td></tr></tbody></table></div></div></div>
-
-<script>
-// ==================== GLOBAL VARIABLES ====================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzhZrDLlOT9dnoZaBxjmH1w-Pr5Ud4j-WSip6CDtBRROBQshs95u9iGRdtMattMk8vL/exec';
-const urlParams = new URLSearchParams(window.location.search);
-const podcastId = urlParams.get('podcast');
-if (!podcastId) { alert('Podcast tidak dipilih'); window.location.href = 'index.html'; }
-
-let currentUser = null;
-let projects = [];
-let editors = [];
-let subjects = [];
-let settingsData = {
-    global: '', res: '', rev: '', waRev: '', waRet: '', adminWa: '',
-    fonteetoken: '', fonteeEndpoint: 'https://api.fontee.com/send-message',
-    countryCode: '62', loginTitle: ' Podcast', adminUsername: 'admin',
-    adminPassword: 'labsiber2026', userPassword: 'user123', podcastName: '',
-    userNotifActive: true, podcastMaterial: '', podcastResult: '', podcastRevision: ''
-};
-let myChart = null, myChartMon = null;
-let activeRowIndex = null;
-let whatsappLogs = [];
-let selectedRows = new Set();
-
-function escapeHtml(unsafe) { if(!unsafe) return ''; return String(unsafe).replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-function formatDateDisplay(d) { if(!d) return '-'; let date = new Date(d); return isNaN(date) ? d : date.toLocaleDateString('id-ID'); }
-function formatDateForInput(d) { if(!d) return ''; let date = new Date(d); return isNaN(date) ? '' : date.toISOString().split('T')[0]; }
-function normalizeStatus(s) { let str = String(s||'').toLowerCase().trim(); if(str==='to do'||str==='todo') return 'To do'; if(str==='in progress'||str==='progress') return 'In Progress'; if(str==='review') return 'Review'; if(str==='revision'||str==='revisi') return 'Revision'; if(str==='retake') return 'Retake'; if(str==='finalized'||str==='final'||str==='done') return 'Finalized'; return 'To do'; }
-function getStatusColor(s) { const map = { 'Finalized':'#34C759','In Progress':'#FFCC00','To do':'#007AFF','Review':'#5856D6','Revision':'#FF3B30','Retake':'#E67E22' }; return map[s]||'#8E8E93'; }
-function isNearDeadline(p) { if(p.status==='Finalized') return false; let days = Math.ceil((new Date(p.deadline)-new Date())/(1000*60*60*24)); return p.deadline && days<=3 && days>=0; }
-const toggleLoading = (show) => document.getElementById('loading-screen').style.display = show?'flex':'none';
-window.openModal = (id) => document.getElementById(id).style.display = 'flex';
-window.closeModal = (id) => document.getElementById(id).style.display = 'none';
-
-// WA Log
-function addWALog(recipient, projectTitle, status, message, success=true) {
-    let ts = new Date().toLocaleString('id-ID',{hour12:false});
-    whatsappLogs.unshift({timestamp:ts, recipient, projectTitle:projectTitle||'-', status:status||'-', message:message.length>50?message.substring(0,50)+'...':message, success});
-    if(whatsappLogs.length>100) whatsappLogs.pop();
-    updateWABadge(); renderWAPopup();
-}
-function updateWABadge() { let badge=document.getElementById('waLogBadge'); if(badge) badge.innerText=whatsappLogs.length; }
-function renderWAPopup() { let body=document.getElementById('waLogBody'); if(!body) return; if(!whatsappLogs.length){ body.innerHTML='<div style="text-align:center;padding:20px;">Belum ada aktivitas</div>'; return; }
-    let html='<table class="log-table"><thead><tr><th>Waktu</th><th>Penerima</th><th>Project</th><th>Status</th><th>Pesan</th><th>Hasil</th></tr></thead><tbody>';
-    whatsappLogs.forEach(l=>{ html+=`<tr><td>${l.timestamp}</td><td>${l.recipient}</td><td>${l.projectTitle}</td><td>${l.status}</td><td>${l.message}</td><td class="${l.success?'log-success':'log-failed'}">${l.success?'✓':'✗'}</td></tr>`; });
-    html+='</tbody></table>'; body.innerHTML=html;
-}
-window.toggleLogPopup = () => { let pop=document.getElementById('waLogPopup'); if(pop) pop.style.display=pop.style.display==='flex'?'none':'flex'; if(pop.style.display==='flex') renderWAPopup(); };
-
-// Kirim WA via backend
-async function sendWABackend(target, msg, projectTitle='', status='') {
-    if(!target) { addWALog('(no number)', projectTitle, status, msg.substring(0,50), false); return false; }
-    let editorNumbers = editors.map(e=>e.wa).filter(Boolean);
-    let isEditor = editorNumbers.includes(target);
-    if(isEditor && !settingsData.userNotifActive) { addWALog(target, projectTitle, status, 'Notifikasi user nonaktif', false); return false; }
-    let formData = new URLSearchParams(); formData.append('action','SEND_WA_NOTIFICATION'); formData.append('targetNumber',target); formData.append('customMessage',msg);
-    try{
-        let res = await fetch(SCRIPT_URL, {method:'POST', body:formData});
-        let data = await res.json();
-        let success = data.success===true;
-        let recipient = editors.find(e=>e.wa===target)?.name || target;
-        addWALog(recipient, projectTitle, status, msg.substring(0,50), success);
-        return success;
-    }catch(err){ addWALog(target, projectTitle, status, msg.substring(0,50), false); return false; }
-}
-window.sendWABackend = sendWABackend;
-
-// Load data
-async function refreshData() {
-    toggleLoading(true); selectedRows.clear();
-    try{
-        let res = await fetch(SCRIPT_URL+'?podcast='+podcastId+'&t='+Date.now());
-        let data = await res.json();
-        projects = (data.projects||[]).map(p=>({ id:p.id, title:p.title||'', subject:p.subject||p.Narasumber||'', host:p.host||'', editor:p.editor||'', deadline:p.deadline||'', status:normalizeStatus(p.status||p.Status||''), raw:p.raw||p.RAW||'', result:p.result||p.Result||'', revision:p.revision||p.Revision||'', note:p.note||p.Note||'', timestamp:p.timestamp||'', rowIndex:p.id }));
-        editors = (data.editors||[]).filter(e=>e.name&&e.name!=='admin').map(e=>({ name:String(e.name).trim(), wa:String(e.wa||'').trim() }));
-        subjects = [...new Set((data.subjects||[]).map(s=>String(s).trim()).filter(Boolean))];
-        let sets = data.settings||[];
-        sets.forEach(r=>{ if(r.length<2) return; let k=r[0],v=r[1];
-            if(k==='GLOBAL_MATERIAL') settingsData.global=v; else if(k==='FOLDER_RESULT') settingsData.res=v; else if(k==='FOLDER_REVISION') settingsData.rev=v;
-            else if(k==='WA_REVISION') settingsData.waRev=v; else if(k==='WA_RETAKE') settingsData.waRet=v; else if(k==='ADMIN_WA') settingsData.adminWa=v;
-            else if(k==='FONTEE_TOKEN') settingsData.fonteetoken=v; else if(k==='FONTEE_ENDPOINT') settingsData.fonteeEndpoint=v;
-            else if(k==='COUNTRY_CODE') settingsData.countryCode=v; else if(k==='LOGIN_TITLE') settingsData.loginTitle=v;
-            else if(k==='ADMIN_USERNAME') settingsData.adminUsername=v; else if(k==='ADMIN_PASSWORD') settingsData.adminPassword=v;
-            else if(k==='USER_PASSWORD') settingsData.userPassword=v; else if(k==='USER_NOTIF_ACTIVE') settingsData.userNotifActive=(v==='true'||v==='1');
+    <script src="js/dashboard.js"></script>
+    <script>
+        // Tambahan agar panel WhatsApp kembali ke posisi awal saat klik di luar panel
+        document.addEventListener('click', function(event) {
+            const waPanel = document.getElementById('wa-panel');
+            const toggleBtn = document.getElementById('toggle-wa-panel-btn');
+            if (!waPanel || !toggleBtn) return;
+            // Jika panel terbuka (translateX(0px)) dan yang diklik bukan bagian dari panel atau tombol toggle
+            if (waPanel.style.transform === 'translateX(0px)' && !waPanel.contains(event.target) && !toggleBtn.contains(event.target)) {
+                waPanel.style.transform = 'translateX(100%)';
+            }
         });
-        if(data.podcast){ settingsData.podcastName=data.podcast.name; settingsData.podcastMaterial=data.podcast.material_folder||''; settingsData.podcastResult=data.podcast.result_folder||''; settingsData.podcastRevision=data.podcast.revision_folder||''; }
-        else { settingsData.podcastName=settingsData.loginTitle; settingsData.podcastMaterial=settingsData.global; settingsData.podcastResult=settingsData.res; settingsData.podcastRevision=settingsData.rev; }
-        document.getElementById('sum-editor').innerText=editors.length;
-        document.getElementById('sum-subject').innerText=subjects.length;
-        document.getElementById('sum-video').innerText=projects.length;
-        document.getElementById('mon-sum-editor').innerText=editors.length;
-        document.getElementById('mon-sum-subject').innerText=subjects.length;
-        document.getElementById('mon-sum-video').innerText=projects.length;
-        let matLink = document.getElementById('global-material-link');
-        if(settingsData.podcastMaterial) matLink.href = settingsData.podcastMaterial;
-        else if(settingsData.global) matLink.href = settingsData.global;
-        else matLink.href = '#';
-        updateAllTitles();
-        syncDropdowns();
-        renderTable();
-        if(document.getElementById('monitoring-page').style.display==='block') refreshMonitoringPage();
-        if(currentUser==='admin'){ document.getElementById('waLogFloat').classList.remove('hidden'); document.getElementById('toggle-wa-panel-btn').classList.remove('hidden'); }
-        else { document.getElementById('waLogFloat').classList.add('hidden'); document.getElementById('toggle-wa-panel-btn').classList.add('hidden'); }
-    }catch(e){ console.error(e); alert('Gagal memuat data'); } finally { toggleLoading(false); }
-}
-function updateAllTitles(){ let title=settingsData.podcastName||settingsData.loginTitle; document.title=title+' - Production Suite'; document.getElementById('login-title').innerText=title; document.getElementById('dashboard-title').innerText=title+' - Production Suite'; document.getElementById('monitoring-title-text').innerText='Monitoring '+title; }
-function syncDropdowns(){
-    let subj=document.getElementById('f-subject'); if(subj){ let opts='<option value="">All Narasumber</option>'; let relevant=currentUser==='admin'?subjects:[...new Set(projects.filter(p=>p.editor===currentUser).map(p=>p.subject).filter(Boolean))]; relevant.forEach(s=>{if(s) opts+=`<option value="${s}">${s}</option>`;}); subj.innerHTML=opts; }
-    let sts=document.getElementById('f-status'); if(sts) sts.innerHTML='<option value="">All Status</option>'+['To do','In Progress','Review','Revision','Retake','Finalized'].map(s=>`<option value="${s}">${s}</option>`).join('');
-    let nSubj=document.getElementById('n-subject'); if(nSubj) nSubj.innerHTML=subjects.map(s=>`<option value="${s}">${s}</option>`).join('');
-    let nEd=document.getElementById('n-editor'); if(nEd) nEd.innerHTML=editors.map(e=>`<option value="${e.name}">${e.name}</option>`).join('');
-    if(currentUser==='admin'){ let ed=document.getElementById('f-editor'); if(ed){ ed.innerHTML='<option value="">All Editor</option>'+editors.map(e=>`<option value="${e.name}">${e.name}</option>`).join(''); ed.classList.remove('hidden'); }
-        let waSel=document.getElementById('wa-recipient-select'); if(waSel) waSel.innerHTML='<option value="">-- Pilih Editor --</option>'+editors.map(e=>`<option value="${e.name}">${e.name}</option>`).join('');
-    } else { let ed=document.getElementById('f-editor'); if(ed) ed.classList.add('hidden'); }
-}
 
-window.renderTable = function(){
-    let fSub = document.getElementById('f-subject')?.value||'', fEd = (currentUser==='admin')?document.getElementById('f-editor')?.value||'':'', fSt = document.getElementById('f-status')?.value||'';
-    let filtered = projects.map(p=>({...p, displayStatus:normalizeStatus(p.status)}));
-    if(currentUser!=='admin') filtered = filtered.filter(p=>p.editor===currentUser);
-    filtered = filtered.filter(p=>(!fSub||p.subject===fSub) && (!fEd||p.editor===fEd) && (!fSt||p.displayStatus===fSt));
-    filtered.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
-    let tbody = document.getElementById('main-table-body');
-    if(!filtered.length){ tbody.innerHTML='<tr><td colspan="12" style="text-align:center;">Belum ada project</td></tr>'; updateStatsAndChart(filtered); return; }
-    let html='';
-    filtered.forEach(p=>{
-        let deadlineClass = isNearDeadline(p)?'deadline-warning':'';
-        let checked = selectedRows.has(p.rowIndex)?'checked':'';
-        let revIcon = p.revision ? `<a href="${escapeHtml(p.revision)}" target="_blank" class="btn-main btn-gray" style="padding:5px"><i class="fa-solid fa-rotate"></i></a>` : '-';
-        let resIcon = p.result ? `<a href="${escapeHtml(p.result)}" target="_blank" class="btn-main btn-gray" style="padding:5px"><i class="fa-solid fa-play"></i></a>` : '-';
-        let rawIcon = p.raw ? `<a href="${escapeHtml(p.raw)}" target="_blank" class="btn-main btn-gray" style="padding:5px"><i class="fa-solid fa-link"></i></a>` : '-';
-        html+=`<tr>
-            <td style="text-align:center;"><input type="checkbox" class="row-checkbox" data-rowindex="${p.rowIndex}" ${checked} onclick="toggleRowSelection(${p.rowIndex}, this.checked)"></td>
-            <td data-label="Title"><b>${escapeHtml(p.title)}</b></td>
-            <td data-label="Narasumber">${escapeHtml(p.subject)}</td>
-            <td data-label="Host">${escapeHtml(p.host)}</td>
-            <td data-label="Editor">${escapeHtml(p.editor)}</td>
-            <td data-label="Deadline" class="${deadlineClass}">${formatDateDisplay(p.deadline)}</td>
-            <td data-label="Status"><span class="pill" style="background:${getStatusColor(p.displayStatus)}">${p.displayStatus}</span></td>
-            <td data-label="RAW">${rawIcon}</td>
-            <td data-label="Res">${resIcon}</td>
-            <td data-label="Rev">${revIcon}</td>
-            <td data-label="Note" class="note-cell">${p.note?`<div id="note-${p.rowIndex}" class="note-text">${escapeHtml(p.note)}</div><button class="note-more-btn" onclick="toggleNote('note-${p.rowIndex}')">more</button>`:'-'}</td>
-            <td data-label="Action"><button class="btn-main btn-gray" onclick="openAction(${p.rowIndex})">Edit</button></td>
-        </table>`;
-    });
-    tbody.innerHTML=html;
-    let selectAll = document.getElementById('select-all-checkbox');
-    if(selectAll){ let total=document.querySelectorAll('.row-checkbox').length, checkedCount=document.querySelectorAll('.row-checkbox:checked').length; selectAll.checked=total>0&&checkedCount===total; selectAll.indeterminate=checkedCount>0&&checkedCount<total; }
-    let nearCount=filtered.filter(isNearDeadline).length;
-    document.getElementById('sum-deadline-warning').innerText=nearCount;
-    document.getElementById('deadline-warning-item').style.display=nearCount?'flex':'none';
-    updateStatsAndChart(filtered);
-    let searchText = document.getElementById('search-text')?.value.toLowerCase();
-    if(searchText){ document.querySelectorAll('#main-table-body tr').forEach(row=>{ row.style.display=row.textContent.toLowerCase().includes(searchText)?'': 'none'; }); }
-};
-function updateStatsAndChart(data){
-    let todo=data.filter(x=>x.displayStatus==='To do').length, prog=data.filter(x=>x.displayStatus==='In Progress').length, rev=data.filter(x=>x.displayStatus==='Review').length, revis=data.filter(x=>x.displayStatus==='Revision').length, ret=data.filter(x=>x.displayStatus==='Retake').length, fin=data.filter(x=>x.displayStatus==='Finalized').length;
-    document.getElementById('stat-todo').innerText=todo; document.getElementById('stat-progress').innerText=prog; document.getElementById('stat-review').innerText=rev; document.getElementById('stat-revision').innerText=revis; document.getElementById('stat-retake').innerText=ret; document.getElementById('stat-final').innerText=fin;
-    let total=data.length||1; let percent=Math.round((fin/total)*100); document.getElementById('center-percent').innerText=percent+'%';
-    if(myChart) myChart.destroy(); let ctx=document.getElementById('statusChart').getContext('2d'); myChart=new Chart(ctx,{type:'doughnut',data:{labels:['To do','In Progress','Review','Revision','Retake','Finalized'],datasets:[{data:[todo,prog,rev,revis,ret,fin],backgroundColor:['#007AFF','#FFCC00','#5856D6','#FF3B30','#E67E22','#34C759'],borderWidth:0}]},options:{cutout:'70%',plugins:{legend:{display:false},datalabels:{display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0,backgroundColor:(ctx)=>ctx.dataset.backgroundColor[ctx.dataIndex],borderRadius:4,color:'white',font:{weight:'bold',size:10},formatter:(val,ctx)=>{let total=ctx.dataset.data.reduce((a,b)=>a+b,0); return total?Math.round((val/total)*100)+'%':'0%';}}}}});
-    if(document.getElementById('statusChartMonitoring')){
-        if(myChartMon) myChartMon.destroy();
-        let ctxMon=document.getElementById('statusChartMonitoring').getContext('2d');
-        myChartMon=new Chart(ctxMon,{type:'doughnut',data:{labels:['To do','In Progress','Review','Revision','Retake','Finalized'],datasets:[{data:[todo,prog,rev,revis,ret,fin],backgroundColor:['#007AFF','#FFCC00','#5856D6','#FF3B30','#E67E22','#34C759'],borderWidth:0}]},options:{cutout:'70%',plugins:{legend:{display:false},datalabels:{display:(ctx)=>ctx.dataset.data[ctx.dataIndex]>0,backgroundColor:(ctx)=>ctx.dataset.backgroundColor[ctx.dataIndex],borderRadius:4,color:'white',font:{weight:'bold',size:10},formatter:(val,ctx)=>{let total=ctx.dataset.data.reduce((a,b)=>a+b,0); return total?Math.round((val/total)*100)+'%':'0%';}}}}});
-        document.getElementById('monitoring-center-percent').innerText=percent+'%';
-        document.getElementById('mon-stat-todo').innerText=todo; document.getElementById('mon-stat-progress').innerText=prog; document.getElementById('mon-stat-review').innerText=rev; document.getElementById('mon-stat-revision').innerText=revis; document.getElementById('mon-stat-retake').innerText=ret; document.getElementById('mon-stat-final').innerText=fin;
-    }
-}
+        // ========== FUNGSIONALITAS PENCARIAN ==========
+        (function() {
+            // Simpan fungsi renderTable asli (dari dashboard.js)
+            const originalRenderTable = window.renderTable;
 
-window.openAction = function(idx){
-    activeRowIndex = idx;
-    let p = projects.find(x=>x.rowIndex===idx);
-    if(!p) return;
-    document.getElementById('a-title').value = p.title||'';
-    document.getElementById('a-deadline').value = formatDateForInput(p.deadline);
-    document.getElementById('a-result').value = p.result||'';
-    document.getElementById('a-revision').value = p.revision||'';
-    document.getElementById('a-note').value = p.note||'';
-    let subj = document.getElementById('a-subject'); subj.innerHTML = subjects.map(s=>`<option value="${s}">${s}</option>`).join(''); subj.value = p.subject||'';
-    document.getElementById('a-host').value = p.host||'';
-    let edSel = document.getElementById('a-change-editor'); edSel.innerHTML = editors.map(e=>`<option value="${e.name}">${e.name}</option>`).join('');
-    if(editors.some(e=>e.name===p.editor)) edSel.value = p.editor; else edSel.value = p.editor;
-    let sts = document.getElementById('a-status');
-    if(currentUser==='admin'){
-        document.getElementById('admin-action-area').classList.remove('hidden');
-        document.getElementById('editor-action-area').classList.add('hidden');
-        sts.innerHTML = ['To do','In Progress','Review','Revision','Retake','Finalized'].map(s=>`<option value="${s}">${s}</option>`).join('');
-        document.getElementById('a-title').disabled=false; document.getElementById('a-deadline').disabled=false; document.getElementById('a-note').disabled=false; edSel.disabled=false; document.getElementById('a-subject').disabled=false; document.getElementById('a-host').disabled=false;
-    } else {
-        document.getElementById('admin-action-area').classList.add('hidden');
-        document.getElementById('editor-action-area').classList.remove('hidden');
-        document.getElementById('editor-action-area').innerHTML = `
-            <div class="input-group"><label>Result (link)</label><input type="text" id="a-result" placeholder="https://..." value="${escapeHtml(p.result||'')}"></div>
-            <div class="input-group"><label>Revision (link)</label><input type="text" id="a-revision" placeholder="https://..." value="${escapeHtml(p.revision||'')}"></div>
-            <div class="input-group"><label>Note</label><textarea id="a-note" rows="3">${escapeHtml(p.note||'')}</textarea></div>
-            <button class="btn-main" style="width:100%" onclick="window.saveAction()">Save</button>
-            <button class="btn-main" style="background:#FF3B30; width:100%; margin-top:8px;" onclick="window.rejectTaskWarning()">Tolak Tugas</button>
-        `;
-        sts.innerHTML = ['To do','In Progress','Review','Retake'].map(s=>`<option value="${s}">${s}</option>`).join('');
-        document.getElementById('a-title').disabled=true; document.getElementById('a-deadline').disabled=true; edSel.disabled=true; document.getElementById('a-subject').disabled=true; document.getElementById('a-host').disabled=true;
-    }
-    sts.value = p.status;
-    handleStatusChange();
-    openModal('modalAction');
-};
-window.handleStatusChange = function(){
-    let st = document.getElementById('a-status').value;
-    let note = document.getElementById('a-note');
-    let needed = (st==='Retake'||st==='Revision');
-    if(note) { note.disabled = !needed; note.placeholder = needed?'Wajib diisi':''; note.style.backgroundColor = needed?'#fff':'#f2f2f7'; if(!needed) note.value=''; }
-};
-window.rejectTaskWarning = function(){ alert('Fitur "Tolak Tugas" belum tersedia. Silakan hubungi admin untuk reassign project.'); };
+            // Fungsi untuk memfilter baris berdasarkan teks (frontend)
+            function filterTableByText() {
+                const searchInput = document.getElementById('search-text');
+                if (!searchInput) return;
+                const searchText = searchInput.value.toLowerCase();
+                const tbody = document.getElementById('main-table-body');
+                if (!tbody) return;
+                const rows = tbody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    // Gabungkan teks dari semua sel (atau bisa difokuskan ke kolom tertentu)
+                    const rowText = row.textContent.toLowerCase();
+                    if (rowText.includes(searchText)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
 
-window.saveAction = async function(){
-    toggleLoading(true);
-    try{
-        let st = document.getElementById('a-status').value;
-        let note = document.getElementById('a-note').value;
-        if((st==='Retake'||st==='Revision') && !note.trim()){ alert('Note wajib diisi'); toggleLoading(false); return; }
-        let selectedEditor = currentUser==='admin' ? document.getElementById('a-change-editor').value : projects.find(p=>p.rowIndex===activeRowIndex)?.editor;
-        if(!selectedEditor){ alert('Editor tidak valid'); toggleLoading(false); return; }
-        let formData = new URLSearchParams();
-        formData.append('action','UPDATE_STATUS');
-        formData.append('rowIndex', activeRowIndex);
-        formData.append('status', st);
-        formData.append('note', note);
-        formData.append('editor', selectedEditor);
-        formData.append('result', document.getElementById('a-result').value);
-        formData.append('revision', document.getElementById('a-revision').value);
-        formData.append('deadline', document.getElementById('a-deadline').value);
-        if(currentUser==='admin'){
-            formData.append('title', document.getElementById('a-title').value);
-            formData.append('subject', document.getElementById('a-subject').value);
-            formData.append('host', document.getElementById('a-host').value);
-        }
-        let res = await fetch(SCRIPT_URL, {method:'POST', body:formData});
-        let result = await res.json();
-        if(result.success){
-            closeModal('modalAction');
-            await refreshData();
-            alert('Berhasil update!');
-        } else alert('Gagal: '+ (result.error||''));
-    } catch(err){ alert('Error server'); } finally { toggleLoading(false); }
-};
-window.deleteProject = async function(){ if(!confirm('Hapus project?')) return; toggleLoading(true); let fd=new URLSearchParams(); fd.append('action','DELETE'); fd.append('rowIndex',activeRowIndex); let res=await fetch(SCRIPT_URL,{method:'POST',body:fd}); let data=await res.json(); if(data.success){ closeModal('modalAction'); await refreshData(); alert('Dihapus'); } else alert('Gagal'); toggleLoading(false); };
-window.toggleSelectAll = (c)=> { document.querySelectorAll('.row-checkbox').forEach(cb=>{ cb.checked=c; let idx=parseInt(cb.dataset.rowindex); if(c) selectedRows.add(idx); else selectedRows.delete(idx); }); };
-window.toggleRowSelection = (idx,checked)=> { if(checked) selectedRows.add(idx); else selectedRows.delete(idx); let sa=document.getElementById('select-all-checkbox'); if(sa){ let total=document.querySelectorAll('.row-checkbox').length, chk=document.querySelectorAll('.row-checkbox:checked').length; sa.checked=total>0&&chk===total; sa.indeterminate=chk>0&&chk<total; } };
-window.deleteSelected = async function(){ if(selectedRows.size===0) return alert('Pilih project'); if(!confirm(`Hapus ${selectedRows.size} project?`)) return; toggleLoading(true); for(let idx of selectedRows){ let fd=new URLSearchParams(); fd.append('action','DELETE'); fd.append('rowIndex',idx); await fetch(SCRIPT_URL,{method:'POST',body:fd}); } selectedRows.clear(); await refreshData(); alert('Terhapus'); toggleLoading(false); };
-window.openManagement = () => { openModal('modalManagement'); renderMgmtLists(); };
-function renderMgmtLists(){ document.getElementById('m-editor-list').innerHTML=editors.map((e,i)=>`<div class="list-item-row"><input type="text" value="${e.name}" onchange="editors[${i}].name=this.value"><input type="text" value="${e.wa}" onchange="editors[${i}].wa=this.value"><i class="fa-solid fa-trash" style="color:red;cursor:pointer" onclick="editors.splice(${i},1);renderMgmtLists()"></i></div>`).join(''); document.getElementById('m-subject-list').innerHTML=subjects.map((s,i)=>`<div class="list-item-row"><input type="text" value="${s}" onchange="subjects[${i}]=this.value"><i class="fa-solid fa-trash" style="color:red;cursor:pointer" onclick="subjects.splice(${i},1);renderMgmtLists()"></i></div>`).join(''); }
-window.addEditor = ()=>{ let n=document.getElementById('m-new-editor-name').value.trim(), w=document.getElementById('m-new-editor-wa').value.trim(); if(!n||!w) return alert('Isi nama dan WA'); if(editors.some(e=>e.name.toLowerCase()===n.toLowerCase())) return alert('Sudah ada'); editors.push({name:n,wa:w}); document.getElementById('m-new-editor-name').value=''; document.getElementById('m-new-editor-wa').value=''; renderMgmtLists(); };
-window.addSubject = ()=>{ let s=document.getElementById('m-new-subject').value.trim(); if(!s) return; if(subjects.includes(s)) return alert('Sudah ada'); subjects.push(s); document.getElementById('m-new-subject').value=''; renderMgmtLists(); };
-window.saveManagement = async ()=>{ let fd=new URLSearchParams(); fd.append('action','FULL_SETTING_UPDATE'); fd.append('global',document.getElementById('m-global').value); fd.append('res',document.getElementById('m-result').value); fd.append('rev',document.getElementById('m-rev').value); fd.append('waRev',document.getElementById('m-wa-review').value); fd.append('waRet',document.getElementById('m-wa-retake').value); fd.append('adminWa',document.getElementById('m-admin-wa').value); fd.append('FONTEE_TOKEN',document.getElementById('m-fontee-token').value); fd.append('fonteeEndpoint',document.getElementById('m-fontee-endpoint').value); fd.append('countryCode',document.getElementById('m-country-code').value); fd.append('editors',JSON.stringify(editors)); fd.append('subjects',JSON.stringify(subjects)); toggleLoading(true); let res=await fetch(SCRIPT_URL,{method:'POST',body:fd}); let data=await res.json(); if(data.success){ closeModal('modalManagement'); await refreshData(); alert('Saved'); } else alert('Gagal'); toggleLoading(false); };
-window.enterMonitoring = async ()=>{ document.getElementById('dashboard-page').style.display='none'; document.getElementById('monitoring-page').style.display='block'; if(!projects.length) await refreshData(); refreshMonitoringPage(); };
-window.refreshMonitoringPage = ()=>{ renderMonitoringTable(); };
-window.renderMonitoringTable = ()=>{
-    let fSub=document.getElementById('mon-f-subject')?.value||'', fEd=document.getElementById('mon-f-editor')?.value||'', fSt=document.getElementById('mon-f-status')?.value||'';
-    let filtered=projects.filter(p=>(!fSub||p.subject===fSub)&&(!fEd||p.editor===fEd)&&(!fSt||normalizeStatus(p.status)===fSt));
-    filtered.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
-    let tbody=document.getElementById('monitoring-table-body');
-    if(!filtered.length){ tbody.innerHTML='<tr><td colspan="10">Tidak ada数据</td></tr>'; return; }
-    let html='';
-    filtered.forEach(p=>{ html+=`<tr><td data-label="Title">${escapeHtml(p.title)}</td><td data-label="Narasumber">${escapeHtml(p.subject)}</td><td data-label="Host">${escapeHtml(p.host)}</td><td data-label="Editor">${escapeHtml(p.editor)}</td><td data-label="Deadline">${formatDateDisplay(p.deadline)}</td><td data-label="Status"><span class="pill" style="background:${getStatusColor(normalizeStatus(p.status))}">${normalizeStatus(p.status)}</span></td><td data-label="RAW">${p.raw?'🔗':'-'}</td><td data-label="Res">${p.result?'▶️':'-'}</td><td data-label="Rev">${p.revision?'🔄':'-'}</td><td data-label="Note">${p.note?p.note.substring(0,30):'-'}</td></tr>`; });
-    tbody.innerHTML=html;
-};
-window.handleLogin = async function(){ let u=document.getElementById('username').value.trim().toLowerCase(), p=document.getElementById('password').value; if(u===settingsData.adminUsername.toLowerCase() && p===settingsData.adminPassword) currentUser='admin'; else if(p===settingsData.userPassword) currentUser=u; else return alert('Username/password salah'); localStorage.setItem('podcastSession',currentUser); await refreshData(); document.getElementById('login-page').style.display='none'; document.getElementById('dashboard-page').style.display='block'; document.getElementById('greetings').innerText='Halo, '+(currentUser==='admin'?'Admin':currentUser.toUpperCase()); if(currentUser==='admin'){ document.getElementById('admin-controls').classList.remove('hidden'); document.getElementById('admin-wa-custom-btn').classList.remove('hidden'); document.getElementById('f-editor').classList.remove('hidden'); document.getElementById('waLogFloat').classList.remove('hidden'); document.getElementById('toggle-wa-panel-btn').classList.remove('hidden'); } else { document.getElementById('admin-controls').classList.add('hidden'); document.getElementById('admin-wa-custom-btn').classList.add('hidden'); document.getElementById('f-editor').classList.add('hidden'); document.getElementById('waLogFloat').classList.add('hidden'); document.getElementById('toggle-wa-panel-btn').classList.add('hidden'); document.getElementById('editor-score-container').style.display='block'; loadEditorScore(currentUser); } };
-async function loadEditorScore(editorName){ try{ let res=await fetch(`${SCRIPT_URL}?action=GET_EDITOR_SCORE&editor=${encodeURIComponent(editorName)}&podcast=${podcastId}`); let data=await res.json(); document.getElementById('score-value').innerText=data.success?data.score:0; }catch(e){ document.getElementById('score-value').innerText='0'; } }
-window.handleLogout = ()=>{ localStorage.removeItem('podcastSession'); location.reload(); };
-window.backToLogin = ()=>{ document.getElementById('monitoring-page').style.display='none'; document.getElementById('dashboard-page').style.display='none'; document.getElementById('login-page').style.display='flex'; };
-window.openNewProjectModal = ()=>{ let today=new Date(); let deadline=new Date(today); deadline.setDate(today.getDate()+5); document.getElementById('n-deadline').value=deadline.toISOString().split('T')[0]; openModal('modalNewProject'); };
-window.saveNewProject = async ()=>{ let title=document.getElementById('n-title').value.trim(), subject=document.getElementById('n-subject').value, host=document.getElementById('n-host').value.trim(), editor=document.getElementById('n-editor').value, deadline=document.getElementById('n-deadline').value, raw=document.getElementById('n-raw').value.trim(); if(!title||!subject||!host||!editor||!deadline||!raw){ alert('Semua field harus diisi'); return; } toggleLoading(true); let fd=new URLSearchParams(); fd.append('action','CREATE'); fd.append('title',title); fd.append('subject',subject); fd.append('host',host); fd.append('editor',editor); fd.append('deadline',deadline); fd.append('raw',raw); fd.append('podcastId',podcastId); let res=await fetch(SCRIPT_URL,{method:'POST',body:fd}); let data=await res.json(); if(data.success){ closeModal('modalNewProject'); await refreshData(); alert('Berhasil!'); } else alert('Gagal'); toggleLoading(false); };
-window.openFolder = (type)=>{ let url = type==='res'?(settingsData.podcastResult||settingsData.res):(settingsData.podcastRevision||settingsData.rev); if(url) window.open(url,'_blank'); else alert('Folder belum diatur'); };
-window.handleWaRecipientChange = ()=>{ let name=document.getElementById('wa-recipient-select').value; let ed=editors.find(e=>e.name===name); if(ed){ document.getElementById('wa-recipient-number').value=ed.wa; document.getElementById('wa-custom-message').value=`*${settingsData.podcastName||settingsData.loginTitle}*\n\nHalo, ${ed.name}!\n\n`; } };
-window.sendCustomWA = async ()=>{ let target=document.getElementById('wa-recipient-number').value.trim(), msg=document.getElementById('wa-custom-message').value.trim(); if(!target||!msg) return alert('Lengkapi data'); if(!settingsData.fonteetoken) return alert('Token Fontee belum diisi'); if(!msg.includes('*')) msg=`*${settingsData.podcastName||settingsData.loginTitle}*\n\n${msg}`; toggleLoading(true); let success=await sendWABackend(target,msg,'Custom',''); toggleLoading(false); if(success){ alert('Terkirim'); closeModal('modalWaCustom'); } else alert('Gagal kirim'); };
-window.toggleNote = (id)=>{ let el=document.getElementById(id); if(el){ el.classList.toggle('expanded'); el.nextElementSibling.innerText=el.classList.contains('expanded')?'less':'more'; } };
-window.openLeaderboardModal = async ()=>{ openModal('modalLeaderboard'); let tbody=document.getElementById('leaderboard-modal-body'); tbody.innerHTML='<tr><td colspan="9">Memuat...</td></tr>'; try{ let res=await fetch(`${SCRIPT_URL}?action=GET_LEADERBOARD&podcast=${podcastId}`); let data=await res.json(); if(data.success && data.leaderboard.length){ let html=''; data.leaderboard.forEach((row,idx)=>{ html+=`<tr><td data-label="Peringkat">${idx+1}</td><td data-label="Nama Editor">${escapeHtml(row.editor_name)}</td><td data-label="Total Project">${row.total_projects}</td><td data-label="Tepat Waktu">${row.on_time_projects}</td><td data-label="Hari Terlambat">${row.late_days}</td><td data-label="Revisi">${row.revision_count}</td><td data-label="Retake">${row.retake_count}</td><td data-label="Skor"><strong>${row.score}</strong></td><td data-label="Aksi"><button class="btn-main btn-sm" onclick="openChatFromLeaderboard('${row.editor_name}')"><i class="fa-brands fa-whatsapp"></i></button></td></tr>`; }); tbody.innerHTML=html; } else tbody.innerHTML='<tr><td colspan="9">Tidak ada data</td></tr>'; }catch(e){ tbody.innerHTML='<td><td colspan="9">Error</td></tr>'; } };
-window.openChatFromLeaderboard = (name)=>{ let editor=editors.find(e=>e.name===name); if(!editor||!editor.wa) return alert('Nomor WA tidak tersedia'); document.getElementById('wa-recipient-select').value=editor.name; document.getElementById('wa-recipient-number').value=editor.wa; document.getElementById('wa-custom-message').value=`*${settingsData.podcastName||settingsData.loginTitle}*\n\nHalo, ${editor.name}!\n\n`; openModal('modalWaCustom'); };
+            // Override renderTable: panggil asli, lalu filter
+            window.renderTable = function() {
+                if (originalRenderTable) {
+                    originalRenderTable();
+                } else {
+                    console.warn('renderTable asli tidak ditemukan, filter hanya akan bekerja pada tabel statis');
+                }
+                filterTableByText();
+            };
 
-document.getElementById('toggle-wa-panel-btn')?.addEventListener('click',()=>{ let p=document.getElementById('wa-panel'); p.style.transform=p.style.transform==='translateX(0px)'?'translateX(100%)':'translateX(0px)'; });
-document.getElementById('close-wa-panel')?.addEventListener('click',()=>{ document.getElementById('wa-panel').style.transform='translateX(100%)'; });
-document.getElementById('user-notif-toggle')?.addEventListener('change',async function(){ let active=this.checked; let fd=new URLSearchParams(); fd.append('action','UPDATE_USER_NOTIF'); fd.append('active',active); let res=await fetch(SCRIPT_URL,{method:'POST',body:fd}); let data=await res.json(); if(data.success) settingsData.userNotifActive=active; else this.checked=!active; });
-document.getElementById('send-deadline-btn')?.addEventListener('click',async function(){ let projectsToNotify=projects.filter(p=>p.deadline&&p.status!=='Finalized'&&(new Date(p.deadline)-new Date())/(86400000)<=3 && (new Date(p.deadline)-new Date())>=0); if(!projectsToNotify.length){ alert('Tidak ada deadline mendekat'); return; } let sent=0; for(let p of projectsToNotify){ let editor=editors.find(e=>e.name===p.editor); if(editor&&editor.wa){ let msg=`*${settingsData.podcastName}*\n\nHalo ${editor.name}, deadline project "${p.title}" pada ${formatDateDisplay(p.deadline)}. Segera selesaikan!`; let ok=await sendWABackend(editor.wa,msg,p.title,''); if(ok) sent++; await new Promise(r=>setTimeout(r,500)); } } alert(`Terkirim ke ${sent} editor`); });
-document.getElementById('send-broadcast-all-btn')?.addEventListener('click',async function(){ let msg=document.getElementById('broadcast-all-message').value.trim(); if(!msg) return alert('Pesan kosong'); if(!confirm(`Kirim ke ${editors.length} editor?`)) return; let sent=0; for(let ed of editors){ if(ed.wa){ let fullMsg=`*${settingsData.podcastName}*\n\n${msg}`; let ok=await sendWABackend(ed.wa,fullMsg,'Broadcast',''); if(ok) sent++; await new Promise(r=>setTimeout(r,500)); } } alert(`Broadcast terkirim ke ${sent} editor`); document.getElementById('broadcast-all-message').value=''; });
-
-window.onload = async ()=>{ let sess=localStorage.getItem('podcastSession'); if(sess){ currentUser=sess; await refreshData(); document.getElementById('login-page').style.display='none'; document.getElementById('dashboard-page').style.display='block'; document.getElementById('greetings').innerText='Halo, '+(currentUser==='admin'?'Admin':currentUser.toUpperCase()); if(currentUser==='admin'){ document.getElementById('admin-controls').classList.remove('hidden'); document.getElementById('admin-wa-custom-btn').classList.remove('hidden'); document.getElementById('f-editor').classList.remove('hidden'); document.getElementById('waLogFloat').classList.remove('hidden'); document.getElementById('toggle-wa-panel-btn').classList.remove('hidden'); } else { document.getElementById('admin-controls').classList.add('hidden'); document.getElementById('admin-wa-custom-btn').classList.add('hidden'); document.getElementById('f-editor').classList.add('hidden'); document.getElementById('waLogFloat').classList.add('hidden'); document.getElementById('toggle-wa-panel-btn').classList.add('hidden'); document.getElementById('editor-score-container').style.display='block'; loadEditorScore(currentUser); } } else document.getElementById('login-page').style.display='flex'; };
-window.onclick = function(e){ if(e.target.classList.contains('modal')) e.target.style.display='none'; };
-(function addDeleteSelectedButton(){ let adminDiv=document.getElementById('admin-controls'); if(adminDiv && !document.getElementById('btn-delete-selected')){ let btn=document.createElement('button'); btn.id='btn-delete-selected'; btn.className='btn-main'; btn.style.background='#FF3B30'; btn.innerHTML='<i class="fa-solid fa-trash"></i> Delete Selected'; btn.onclick=window.deleteSelected; adminDiv.appendChild(btn); }})();
-if (typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
-</script>
+            // Event listener pada input pencarian (filter tanpa render ulang)
+            document.getElementById('search-text')?.addEventListener('input', filterTableByText);
+        })();
+    </script>
 </body>
 </html>
