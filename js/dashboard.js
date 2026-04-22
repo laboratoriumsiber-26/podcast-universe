@@ -1,4 +1,4 @@
-// ==================== REGISTER CHART PLUGIN (AMAN) ====================
+// ==================== DAFTARKAN PLUGIN DATALABELS UNTUK CHART ====================
 if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
     Chart.register(ChartDataLabels);
 } else {
@@ -6,7 +6,7 @@ if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
 }
 
 // ==================== KONFIGURASI & STATE ====================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby_K3P9U65-FUWruL7ijnoP0NqrzG-_4NdrV30Zrw9Gr5cWJ0eAnrS6IWDNrIDzqdusxw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7NzpUCoVACPM_GdMP3NiqEf9zNwTEY-EyFZtZQOPfeuLrVFHcI3zxprJJQLE48xHqBA/exec';
 const urlParams = new URLSearchParams(window.location.search);
 const podcastId = urlParams.get('podcast');
 if (!podcastId) { alert('Podcast tidak dipilih'); window.location.href = 'index.html'; }
@@ -47,7 +47,7 @@ function escapeHtml(unsafe) {
 }
 
 // ==================== FUNGSI BANTU MODAL ====================
-const toggleLoading = (show) => { 
+const toggleLoading = (show) => {
     const loading = document.getElementById('loading-screen');
     if (loading) loading.style.display = show ? 'flex' : 'none';
 };
@@ -67,28 +67,27 @@ const addWALog = (recipient, projectTitle, status, message, success = true) => {
     const timestamp = new Date().toLocaleString('id-ID', { hour12: false });
     whatsappLogs.unshift({ timestamp, recipient, projectTitle: projectTitle || '-', status: status || '-', message: message.length > 50 ? message.substring(0, 50) + '...' : message, success });
     if (whatsappLogs.length > 100) whatsappLogs.pop();
-    updateWABadge(); 
-    renderWAPopup();
+    updateWABadge(); renderWAPopup();
 };
-const updateWABadge = () => { 
-    const badge = document.getElementById('waLogBadge'); 
-    if (badge) badge.innerText = whatsappLogs.length; 
+const updateWABadge = () => {
+    const badge = document.getElementById('waLogBadge');
+    if (badge) badge.innerText = whatsappLogs.length;
 };
 const renderWAPopup = () => {
-    const body = document.getElementById('waLogBody'); 
+    const body = document.getElementById('waLogBody');
     if (!body) return;
-    if (!whatsappLogs.length) { 
-        body.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">Belum ada aktivitas WhatsApp</div>'; 
-        return; 
+    if (!whatsappLogs.length) {
+        body.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">Belum ada aktivitas WhatsApp</div>';
+        return;
     }
     let html = '<table class="log-table"><thead><tr><th>Waktu</th><th>Penerima</th><th>Project</th><th>Status</th><th>Pesan</th><th>Hasil</th></tr></thead><tbody>';
     whatsappLogs.forEach(log => {
         html += `<tr>
-            <td>${log.timestamp}</td>
-            <td>${log.recipient}</td>
-            <td>${log.projectTitle}</td>
-            <td>${log.status}</td>
-            <td>${log.message}</td>
+            <td>${escapeHtml(log.timestamp)}</td>
+            <td>${escapeHtml(log.recipient)}</td>
+            <td>${escapeHtml(log.projectTitle)}</td>
+            <td>${escapeHtml(log.status)}</td>
+            <td>${escapeHtml(log.message)}</td>
             <td class="${log.success ? 'log-success' : 'log-failed'}">${log.success ? '✓' : '✗'}</td>
         </tr>`;
     });
@@ -98,19 +97,19 @@ const renderWAPopup = () => {
 window.toggleLogPopup = () => {
     const popup = document.getElementById('waLogPopup');
     if (popup) popup.style.display = popup.style.display === 'flex' ? 'none' : 'flex';
-    if (popup && popup.style.display === 'flex') renderWAPopup();
+    if (popup.style.display === 'flex') renderWAPopup();
 };
 
 // ==================== FUNGSI BANTU FORMAT ====================
-const formatDateDisplay = (dateStr) => { 
-    if (!dateStr) return '-'; 
-    const d = new Date(dateStr); 
-    return isNaN(d) ? dateStr : d.toLocaleDateString('id-ID'); 
+const formatDateDisplay = (dateStr) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    return isNaN(d) ? dateStr : d.toLocaleDateString('id-ID');
 };
-const formatDateForInput = (dateStr) => { 
-    if (!dateStr) return ''; 
-    const d = new Date(dateStr); 
-    return isNaN(d) ? '' : d.toISOString().split('T')[0]; 
+const formatDateForInput = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return isNaN(d) ? '' : d.toISOString().split('T')[0];
 };
 const getDaysUntilDeadline = (deadlineStr) => {
     if (!deadlineStr) return null;
@@ -159,7 +158,6 @@ const sendWABackend = async (target, msg, projectTitle = '', status = '') => {
     formData.append('action', 'SEND_WA_NOTIFICATION');
     formData.append('targetNumber', target);
     formData.append('customMessage', msg);
-    // Tidak perlu auth_token untuk send WA (bisa diakses publik)
     try {
         const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
         const data = await res.json();
@@ -309,7 +307,7 @@ const syncDropdowns = () => {
     if (subj) {
         let opts = '<option value="">All Narasumber</option>';
         const relevant = (currentUser === 'admin') ? subjects : [...new Set(projects.filter(p => p.editor === currentUser).map(p => p.subject).filter(Boolean))];
-        relevant.forEach(s => { if (s) opts += `<option value="${s}">${escapeHtml(s)}</option>`; });
+        relevant.forEach(s => { if (s) opts += `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`; });
         subj.innerHTML = opts;
     }
     const sts = document.getElementById('f-status');
@@ -317,17 +315,17 @@ const syncDropdowns = () => {
         sts.innerHTML = '<option value="">All Status</option>' + ['To do', 'In Progress', 'Review', 'Revision', 'Retake', 'Finalized'].map(s => `<option value="${s}">${s}</option>`).join('');
     }
     const nSubj = document.getElementById('n-subject');
-    if (nSubj) nSubj.innerHTML = subjects.map(s => `<option value="${s}">${escapeHtml(s)}</option>`).join('');
+    if (nSubj) nSubj.innerHTML = subjects.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
     const nEd = document.getElementById('n-editor');
-    if (nEd) nEd.innerHTML = editors.map(e => `<option value="${e.name}">${escapeHtml(e.name)}</option>`).join('');
+    if (nEd) nEd.innerHTML = editors.map(e => `<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)}</option>`).join('');
     if (currentUser === 'admin') {
         const ed = document.getElementById('f-editor');
         if (ed) {
-            ed.innerHTML = '<option value="">All Editor</option>' + editors.map(e => `<option value="${e.name}">${escapeHtml(e.name)}</option>`).join('');
+            ed.innerHTML = '<option value="">All Editor</option>' + editors.map(e => `<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)}</option>`).join('');
             ed.classList.remove('hidden');
         }
         const waSel = document.getElementById('wa-recipient-select');
-        if (waSel) waSel.innerHTML = '<option value="">-- Pilih Editor --</option>' + editors.map(e => `<option value="${e.name}">${escapeHtml(e.name)}</option>`).join('');
+        if (waSel) waSel.innerHTML = '<option value="">-- Pilih Editor --</option>' + editors.map(e => `<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)}</option>`).join('');
     } else {
         const ed = document.getElementById('f-editor');
         if (ed) ed.classList.add('hidden');
@@ -341,7 +339,7 @@ window.renderTable = function () {
         const fSub = document.getElementById('f-subject')?.value || '';
         const fEd = (currentUser === 'admin') ? document.getElementById('f-editor')?.value || '' : '';
         const fSt = document.getElementById('f-status')?.value || '';
-        const fSearch = document.getElementById('f-search')?.value.toLowerCase() || '';
+        const fSearch = document.getElementById('search-text')?.value.toLowerCase() || '';
 
         let filtered = projects.map(p => ({ ...p, displayStatus: normalizeStatus(p.status) }));
         if (currentUser !== 'admin') filtered = filtered.filter(p => p.editor === currentUser);
@@ -351,7 +349,7 @@ window.renderTable = function () {
 
         const tbody = document.getElementById('main-table-body');
         if (!filtered.length) {
-            tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:30px;">Belum ada project</td></tr>`;
+            tbody.innerHTML = `<td><td colspan="12" style="text-align:center; padding:30px;">Belum ada project</td></tr>`;
             updateStatsAndChart([]);
             return;
         }
@@ -406,12 +404,18 @@ const updateStatsAndChart = (data) => {
     const revis = data.filter(x => x.displayStatus === 'Revision').length;
     const ret = data.filter(x => x.displayStatus === 'Retake').length;
     const fin = data.filter(x => x.displayStatus === 'Finalized').length;
-    document.getElementById('stat-todo').innerText = todo;
-    document.getElementById('stat-progress').innerText = prog;
-    document.getElementById('stat-review').innerText = rev;
-    document.getElementById('stat-revision').innerText = revis;
-    document.getElementById('stat-retake').innerText = ret;
-    document.getElementById('stat-final').innerText = fin;
+    const statTodo = document.getElementById('stat-todo');
+    if (statTodo) statTodo.innerText = todo;
+    const statProg = document.getElementById('stat-progress');
+    if (statProg) statProg.innerText = prog;
+    const statRev = document.getElementById('stat-review');
+    if (statRev) statRev.innerText = rev;
+    const statRevis = document.getElementById('stat-revision');
+    if (statRevis) statRevis.innerText = revis;
+    const statRet = document.getElementById('stat-retake');
+    if (statRet) statRet.innerText = ret;
+    const statFin = document.getElementById('stat-final');
+    if (statFin) statFin.innerText = fin;
     const total = data.length || 1;
     const percent = Math.round((fin / total) * 100);
     const center = document.getElementById('center-percent');
@@ -436,9 +440,9 @@ window.refreshMonitoringPage = () => {
     const monSumVideo = document.getElementById('mon-sum-video');
     if (monSumVideo) monSumVideo.innerText = projects.length;
     const monSub = document.getElementById('mon-f-subject');
-    if (monSub) monSub.innerHTML = '<option value="">All Narasumber</option>' + subjects.map(s => `<option value="${s}">${escapeHtml(s)}</option>`).join('');
+    if (monSub) monSub.innerHTML = '<option value="">All Narasumber</option>' + subjects.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
     const monEd = document.getElementById('mon-f-editor');
-    if (monEd) monEd.innerHTML = '<option value="">All Editor</option>' + editors.map(e => `<option value="${e.name}">${escapeHtml(e.name)}</option>`).join('');
+    if (monEd) monEd.innerHTML = '<option value="">All Editor</option>' + editors.map(e => `<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)}</option>`).join('');
     const monSt = document.getElementById('mon-f-status');
     if (monSt) monSt.innerHTML = '<option value="">All Status</option>' + ['To do', 'In Progress', 'Review', 'Revision', 'Retake', 'Finalized'].map(s => `<option value="${s}">${s}</option>`).join('');
     renderMonitoringTable();
@@ -451,7 +455,7 @@ window.renderMonitoringTable = () => {
     filtered = filtered.filter(p => (!fSub || p.subject === fSub) && (!fEd || p.editor === fEd) && (!fSt || p.displayStatus === fSt));
     filtered = sortProjectsByNewest(filtered);
     const tbody = document.getElementById('monitoring-table-body');
-    if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Belum ada data</td></tr>'; return; }
+    if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Belum ada数据</td></tr>'; return; }
     let html = '';
     filtered.forEach(p => {
         html += `<tr>
@@ -581,10 +585,6 @@ window.saveNewProject = async () => {
     formData.append('deadline', deadline);
     formData.append('raw', raw);
     formData.append('podcastId', podcastId);
-    // Tambahkan auth_token untuk admin (CREATE butuh akses admin)
-    if (currentUser === 'admin') {
-        formData.append('auth_token', settingsData.adminPassword);
-    }
     try {
         const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
         const result = await res.json();
@@ -610,7 +610,7 @@ window.openAction = (idx) => {
     document.getElementById('a-revision').value = p.revision || '';
     document.getElementById('a-note').value = p.note || '';
     const subj = document.getElementById('a-subject');
-    subj.innerHTML = subjects.map(s => `<option value="${s}">${escapeHtml(s)}</option>`).join('');
+    subj.innerHTML = subjects.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
     subj.value = p.subject || '';
     document.getElementById('a-host').value = p.host || '';
     if (currentUser === 'admin') {
@@ -622,7 +622,7 @@ window.openAction = (idx) => {
     }
     const sts = document.getElementById('a-status');
     const edSel = document.getElementById('a-change-editor');
-    edSel.innerHTML = editors.map(e => `<option value="${e.name}">${escapeHtml(e.name)}</option>`).join('');
+    edSel.innerHTML = editors.map(e => `<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)}</option>`).join('');
     if (currentUser === 'admin') {
         const adminArea = document.getElementById('admin-action-area');
         const editorArea = document.getElementById('editor-action-area');
@@ -673,10 +673,6 @@ window.rejectTask = async function() {
     formData.append('action', 'REJECT_TASK');
     formData.append('rowIndex', activeRowIndex);
     formData.append('reason', 'Tidak bersedia mengerjakan');
-    // Reject task memerlukan akses admin? Tergantung backend, tapi aman kirim token jika admin
-    if (currentUser === 'admin') {
-        formData.append('auth_token', settingsData.adminPassword);
-    }
     try {
         const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
         const result = await res.json();
@@ -702,9 +698,7 @@ window.saveAction = async () => {
         const note = document.getElementById('a-note').value;
         if ((st === 'Retake' || st === 'Revision') && !note.trim()) { alert('Note wajib diisi'); toggleLoading(false); return; }
         if (!settingsData.fonteetoken) {
-            alert('Token Fontee belum diisi! Tidak dapat mengirim WhatsApp.');
-            toggleLoading(false);
-            return;
+            alert('⚠️ Peringatan: Token Fontee belum diisi! WhatsApp tidak akan dikirim. Silakan isi token di halaman Management.');
         }
 
         const formData = new URLSearchParams();
@@ -720,7 +714,6 @@ window.saveAction = async () => {
             formData.append('title', document.getElementById('a-title').value);
             formData.append('subject', document.getElementById('a-subject').value);
             formData.append('host', document.getElementById('a-host').value);
-            formData.append('auth_token', settingsData.adminPassword);
         }
 
         const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
@@ -737,34 +730,34 @@ window.saveAction = async () => {
             const newDeadline = document.getElementById('a-deadline').value;
             const noteText = note;
 
-            if (currentUser === 'admin') {
-                let link = '', linkLabel = '';
-                if (st === 'Revision' || st === 'Review') { link = newResult; linkLabel = 'Result'; } else { link = project?.raw || ''; linkLabel = 'RAW'; }
-                if (editor) {
-                    if (!editor.wa) {
-                        alert(`Nomor WA untuk editor ${editor.name} tidak terisi! WA tidak dikirim.`);
-                    } else {
-                        const msg = window.buildAdminToUserMessage(
-                            editor.name, newTitle, newSubject, newHost, st, newDeadline, noteText, link, linkLabel
-                        );
-                        await sendWABackend(editor.wa, msg, newTitle, st);
-                    }
-                } else { alert('Editor tidak ditemukan! WA tidak dikirim.'); }
+            if (settingsData.fonteetoken) {
+                if (currentUser === 'admin') {
+                    let link = '', linkLabel = '';
+                    if (st === 'Revision' || st === 'Review') { link = newResult; linkLabel = 'Result'; } else { link = project?.raw || ''; linkLabel = 'RAW'; }
+                    if (editor) {
+                        if (!editor.wa) {
+                            alert(`Nomor WA untuk editor ${editor.name} tidak terisi! WA tidak dikirim.`);
+                        } else {
+                            const msg = window.buildAdminToUserMessage(
+                                editor.name, newTitle, newSubject, newHost, st, newDeadline, noteText, link, linkLabel
+                            );
+                            await sendWABackend(editor.wa, msg, newTitle, st);
+                        }
+                    } else { alert('Editor tidak ditemukan! WA tidak dikirim.'); }
 
-                if (st === 'Revision' && settingsData.waRev) {
-                    const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', newTitle, newSubject, newHost, st, newDeadline, noteText, link, linkLabel);
-                    await sendWAToMultiple(settingsData.waRev, msg, newTitle, st);
-                }
-                if (st === 'Retake' && settingsData.waRet) {
-                    const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', newTitle, newSubject, newHost, st, newDeadline, noteText, link, linkLabel);
-                    await sendWAToMultiple(settingsData.waRet, msg, newTitle, st);
-                }
-                if (settingsData.adminWa) {
-                    const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', newTitle, newSubject, newHost, st, newDeadline, noteText, link, linkLabel);
-                    await sendWAToMultiple(settingsData.adminWa, msg, newTitle, st);
-                }
-            } else {
-                if (settingsData.fonteetoken) {
+                    if (st === 'Revision' && settingsData.waRev) {
+                        const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', newTitle, newSubject, newHost, st, newDeadline, noteText, link, linkLabel);
+                        await sendWAToMultiple(settingsData.waRev, msg, newTitle, st);
+                    }
+                    if (st === 'Retake' && settingsData.waRet) {
+                        const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', newTitle, newSubject, newHost, st, newDeadline, noteText, link, linkLabel);
+                        await sendWAToMultiple(settingsData.waRet, msg, newTitle, st);
+                    }
+                    if (settingsData.adminWa) {
+                        const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', newTitle, newSubject, newHost, st, newDeadline, noteText, link, linkLabel);
+                        await sendWAToMultiple(settingsData.adminWa, msg, newTitle, st);
+                    }
+                } else {
                     let link = '', linkLabel = '';
                     if (st === 'Review') { link = newResult; linkLabel = 'Result'; }
                     else if (st === 'Revision') { link = newRevision; linkLabel = 'Revision'; }
@@ -787,9 +780,6 @@ window.deleteProject = async () => {
     const formData = new URLSearchParams();
     formData.append('action', 'DELETE');
     formData.append('rowIndex', activeRowIndex);
-    if (currentUser === 'admin') {
-        formData.append('auth_token', settingsData.adminPassword);
-    }
     try {
         const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
         const result = await res.json();
@@ -798,7 +788,7 @@ window.deleteProject = async () => {
     } catch (err) { alert('Gagal terhubung ke server'); } finally { toggleLoading(false); }
 };
 
-// ==================== MANAGEMENT ====================
+// ==================== MANAGEMENT (DIPERBAIKI) ====================
 window.openManagement = () => {
     document.getElementById('m-global').value = settingsData.global || '';
     document.getElementById('m-result').value = settingsData.res || '';
@@ -812,12 +802,37 @@ window.openManagement = () => {
     renderMgmtLists();
     openModal('modalManagement');
 };
+
 const renderMgmtLists = () => {
     const editorList = document.getElementById('m-editor-list');
-    if (editorList) editorList.innerHTML = editors.map((e, i) => `<div class="list-item-row"><input type="text" value="${escapeHtml(e.name)}" onchange="editors[${i}].name=this.value" placeholder="Nama" style="width:45%"><input type="text" value="${escapeHtml(e.wa)}" onchange="editors[${i}].wa=this.value" placeholder="WA" style="width:40%"><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="editors.splice(${i},1);renderMgmtLists()"></i></div>`).join('');
+    if (editorList) {
+        editorList.innerHTML = '';
+        editors.forEach((e, i) => {
+            const div = document.createElement('div');
+            div.className = 'list-item-row';
+            div.innerHTML = `
+                <input type="text" value="${escapeHtml(e.name)}" onchange="editors[${i}].name=this.value" placeholder="Nama" style="width:45%">
+                <input type="text" value="${escapeHtml(e.wa)}" onchange="editors[${i}].wa=this.value" placeholder="WA" style="width:40%">
+                <i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="editors.splice(${i},1);renderMgmtLists()"></i>
+            `;
+            editorList.appendChild(div);
+        });
+    }
     const subjectList = document.getElementById('m-subject-list');
-    if (subjectList) subjectList.innerHTML = subjects.map((s, i) => `<div class="list-item-row"><input type="text" value="${escapeHtml(s)}" onchange="subjects[${i}]=this.value" style="width:90%"><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="subjects.splice(${i},1);renderMgmtLists()"></i></div>`).join('');
+    if (subjectList) {
+        subjectList.innerHTML = '';
+        subjects.forEach((s, i) => {
+            const div = document.createElement('div');
+            div.className = 'list-item-row';
+            div.innerHTML = `
+                <input type="text" value="${escapeHtml(s)}" onchange="subjects[${i}]=this.value" style="width:90%">
+                <i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="subjects.splice(${i},1);renderMgmtLists()"></i>
+            `;
+            subjectList.appendChild(div);
+        });
+    }
 };
+
 window.addEditor = () => {
     const n = document.getElementById('m-new-editor-name').value.trim();
     const w = document.getElementById('m-new-editor-wa').value.trim();
@@ -828,6 +843,7 @@ window.addEditor = () => {
     document.getElementById('m-new-editor-wa').value = '';
     renderMgmtLists();
 };
+
 window.addSubject = () => {
     const s = document.getElementById('m-new-subject').value.trim();
     if (!s) { alert('Narasumber tidak boleh kosong'); return; }
@@ -836,29 +852,75 @@ window.addSubject = () => {
     document.getElementById('m-new-subject').value = '';
     renderMgmtLists();
 };
+
 window.saveManagement = async () => {
+    // Ambil nilai dari form
+    const globalVal = document.getElementById('m-global').value;
+    const resVal = document.getElementById('m-result').value;
+    const revVal = document.getElementById('m-rev').value;
+    const waRevVal = document.getElementById('m-wa-review').value;
+    const waRetVal = document.getElementById('m-wa-retake').value;
+    const adminWaVal = document.getElementById('m-admin-wa').value;
+    const tokenVal = document.getElementById('m-fontee-token').value;
+    const endpointVal = document.getElementById('m-fontee-endpoint').value;
+    const countryVal = document.getElementById('m-country-code').value;
+
+    // Ambil data editor dari DOM
+    const editorRows = document.querySelectorAll('#m-editor-list .list-item-row');
+    const editorsData = [];
+    editorRows.forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        if (inputs.length >= 2) {
+            const name = inputs[0].value.trim();
+            const wa = inputs[1].value.trim();
+            if (name && wa) editorsData.push({ name, wa });
+        }
+    });
+    // Update global editors
+    if (editorsData.length) editors = editorsData;
+
+    // Ambil data subject dari DOM
+    const subjectRows = document.querySelectorAll('#m-subject-list .list-item-row');
+    const subjectsData = [];
+    subjectRows.forEach(row => {
+        const input = row.querySelector('input');
+        if (input && input.value.trim()) subjectsData.push(input.value.trim());
+    });
+    if (subjectsData.length) subjects = subjectsData;
+
+    // Siapkan FormData
     const formData = new URLSearchParams();
     formData.append('action', 'FULL_SETTING_UPDATE');
-    formData.append('global', document.getElementById('m-global').value);
-    formData.append('res', document.getElementById('m-result').value);
-    formData.append('rev', document.getElementById('m-rev').value);
-    formData.append('waRev', document.getElementById('m-wa-review').value);
-    formData.append('waRet', document.getElementById('m-wa-retake').value);
-    formData.append('adminWa', document.getElementById('m-admin-wa').value);
-    formData.append('FONTEE_TOKEN', document.getElementById('m-fontee-token').value);
-    formData.append('fonteeEndpoint', document.getElementById('m-fontee-endpoint').value);
-    formData.append('countryCode', document.getElementById('m-country-code').value);
+    formData.append('global', globalVal);
+    formData.append('res', resVal);
+    formData.append('rev', revVal);
+    formData.append('waRev', waRevVal);
+    formData.append('waRet', waRetVal);
+    formData.append('adminWa', adminWaVal);
+    formData.append('FONTEE_TOKEN', tokenVal);
+    formData.append('fonteeEndpoint', endpointVal);
+    formData.append('countryCode', countryVal);
     formData.append('editors', JSON.stringify(editors));
     formData.append('subjects', JSON.stringify(subjects));
-    // WAJIB: tambahkan auth_token untuk admin
-    formData.append('auth_token', settingsData.adminPassword);
+
     toggleLoading(true);
     try {
         const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
         const result = await res.json();
-        if (result.success) { closeModal('modalManagement'); await refreshData(); alert('Pengaturan disimpan'); }
-        else alert('Gagal: ' + (result.error || ''));
-    } catch (err) { alert('Gagal terhubung ke server'); } finally { toggleLoading(false); }
+        console.log('Save management response:', result);
+        if (result.success) {
+            closeModal('modalManagement');
+            await refreshData(); // refresh data setelah save
+            alert('Pengaturan berhasil disimpan!');
+        } else {
+            alert('Gagal menyimpan: ' + (result.error || 'Unknown error'));
+        }
+    } catch (err) {
+        console.error('Error saving management:', err);
+        alert('Gagal terhubung ke server: ' + err.message);
+    } finally {
+        toggleLoading(false);
+    }
 };
 
 // ==================== FUNGSI OPEN FOLDER ====================
@@ -932,9 +994,6 @@ window.deleteSelected = async () => {
             const formData = new URLSearchParams();
             formData.append('action', 'DELETE');
             formData.append('rowIndex', rowIndex);
-            if (currentUser === 'admin') {
-                formData.append('auth_token', settingsData.adminPassword);
-            }
             await fetch(SCRIPT_URL, { method: 'POST', body: formData });
         }
         selectedRows.clear();
@@ -1025,9 +1084,6 @@ if (userNotifToggle) {
         const formData = new URLSearchParams();
         formData.append('action', 'UPDATE_USER_NOTIF');
         formData.append('active', active);
-        if (currentUser === 'admin') {
-            formData.append('auth_token', settingsData.adminPassword);
-        }
         try {
             const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
             const data = await res.json();
@@ -1127,7 +1183,7 @@ async function loadLeaderboardModal() {
     try {
         const res = await fetch(`${SCRIPT_URL}?action=GET_LEADERBOARD&podcast=${podcastId}&nocache=${Date.now()}`);
         const data = await res.json();
-        if (!data.success || !data.leaderboard) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Gagal memuat data</td></tr>'; return; }
+        if (!data.success || !data.leaderboard) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Gagal memuat数据</td></tr>'; return; }
         if (data.leaderboard.length === 0) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Belum ada data skor</td></tr>'; return; }
         let html = '';
         data.leaderboard.forEach((row, idx) => {
