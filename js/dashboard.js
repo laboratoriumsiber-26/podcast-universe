@@ -1,5 +1,178 @@
-// ==================== DAFTARKAN PLUGIN DATALABELS UNTUK CHART ====================
-Chart.register(ChartDataLabels);
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Podcast Production Suite</title>
+    <!-- Font Awesome 6 (free) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js & DataLabels -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f5f5f7; color: #1c1c1e; }
+        /* Loading */
+        .loading-screen { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index:9999; display: none; justify-content: center; align-items: center; }
+        .spinner { width: 50px; height: 50px; border: 5px solid #fff; border-top-color: #007AFF; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        /* Login */
+        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .login-card { background: white; border-radius: 24px; padding: 32px; width: 90%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .login-card h2 { margin-bottom: 24px; color: #1c1c1e; }
+        .login-card input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #e5e5ea; border-radius: 12px; font-size: 16px; }
+        .login-card button { width: 100%; padding: 12px; background: #007AFF; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 16px; }
+        /* Dashboard Layout */
+        .dashboard-container { display: none; max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; background: white; border-radius: 20px; padding: 16px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .greeting { font-size: 1.4rem; font-weight: 600; }
+        .stats-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+        .stat-card { background: white; border-radius: 20px; padding: 16px; flex: 1; min-width: 100px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .stat-number { font-size: 28px; font-weight: 700; }
+        .chart-container { background: white; border-radius: 20px; padding: 16px; margin-bottom: 24px; position: relative; max-width: 300px; margin-left: auto; margin-right: auto; }
+        .filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; align-items: center; background: white; padding: 12px 16px; border-radius: 20px; }
+        .filters select, .filters input { padding: 8px 12px; border-radius: 12px; border: 1px solid #ddd; background: white; }
+        .btn-main { background: #007AFF; color: white; border: none; padding: 8px 16px; border-radius: 12px; cursor: pointer; font-weight: 500; transition: 0.2s; }
+        .btn-gray { background: #8E8E93; }
+        .btn-danger { background: #FF3B30; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e5ea; }
+        th { background: #f8f8fa; font-weight: 600; }
+        .pill { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; color: white; background: #007AFF; }
+        .pill-revision { background: #FF3B30; }
+        .deadline-warning { background: #FFE5E5; color: #FF3B30; font-weight: bold; }
+        .note-cell { max-width: 200px; position: relative; }
+        .note-text { white-space: normal; word-break: break-word; max-height: 60px; overflow: hidden; transition: max-height 0.3s; }
+        .note-text.expanded { max-height: 300px; }
+        .note-more-btn { background: none; border: none; color: #007AFF; cursor: pointer; font-size: 12px; margin-top: 4px; }
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index:1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; border-radius: 28px; padding: 24px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; }
+        .modal-content h3 { margin-bottom: 16px; }
+        .modal-content input, .modal-content select, .modal-content textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 12px; }
+        .modal-content button { margin-top: 12px; }
+        .hidden { display: none; }
+        .wa-log-float { position: fixed; bottom: 20px; right: 20px; background: #25D366; width: 56px; height: 56px; border-radius: 28px; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1001; }
+        .wa-log-badge { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 20px; padding: 2px 6px; font-size: 10px; }
+        .wa-log-popup { display: none; position: fixed; bottom: 90px; right: 20px; width: 400px; max-width: 90vw; max-height: 500px; background: white; border-radius: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 1002; flex-direction: column; overflow: hidden; }
+        .log-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .log-table th, .log-table td { padding: 8px; border-bottom: 1px solid #eee; }
+        .log-success { color: green; font-weight: bold; }
+        .log-failed { color: red; }
+        .wa-panel { position: fixed; right: 0; top: 0; width: 380px; max-width: 90vw; height: 100%; background: white; box-shadow: -4px 0 20px rgba(0,0,0,0.1); z-index: 1100; transform: translateX(100%); transition: transform 0.3s; display: flex; flex-direction: column; }
+        .wa-panel-header { padding: 16px; background: #075E54; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .wa-panel-body { flex: 1; padding: 16px; overflow-y: auto; }
+        .wa-panel-footer { padding: 16px; border-top: 1px solid #eee; }
+        .btn-wa { background: #25D366; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; }
+        .list-item-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+        @media (max-width: 768px) { th, td { font-size: 12px; padding: 8px; } .filters { flex-direction: column; align-items: stretch; } }
+    </style>
+</head>
+<body>
+<div id="loading-screen" class="loading-screen"><div class="spinner"></div></div>
+
+<!-- LOGIN PAGE -->
+<div id="login-page" class="login-container">
+    <div class="login-card">
+        <h2 id="login-title">Podcast Universe</h2>
+        <input type="text" id="username" placeholder="Nama / Username" autocomplete="off">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="handleLogin()">Login</button>
+    </div>
+</div>
+
+<!-- DASHBOARD PAGE -->
+<div id="dashboard-page" class="dashboard-container">
+    <div class="header">
+        <div class="greeting" id="greetings"></div>
+        <div>
+            <button class="btn-main" onclick="enterMonitoring()">Monitoring</button>
+            <button class="btn-main" onclick="openManagement()">Manage</button>
+            <button class="btn-main" onclick="handleLogout()">Logout</button>
+            <button id="toggle-wa-panel-btn" class="btn-main btn-gray hidden"><i class="fa-brands fa-whatsapp"></i> WA</button>
+            <button class="btn-main" onclick="openLeaderboardModal()">Leaderboard</button>
+        </div>
+    </div>
+    <div id="admin-controls" class="hidden" style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <button class="btn-main" onclick="openNewProjectModal()">+ New Project</button>
+        <button class="btn-main" onclick="openModal('modalWaCustom')">📨 WA Custom</button>
+        <button id="btn-delete-selected" class="btn-main btn-danger" style="background:#FF3B30;"><i class="fa-solid fa-trash"></i> Delete Selected</button>
+    </div>
+    <div id="editor-score-container" class="stat-card" style="display: none; margin-bottom: 16px;">
+        Skor Anda: <span id="score-value">0</span>
+    </div>
+    <div class="stats-row">
+        <div class="stat-card"><div class="stat-number" id="stat-todo">0</div><div>To do</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-progress">0</div><div>Progress</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-review">0</div><div>Review</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-revision">0</div><div>Revision</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-retake">0</div><div>Retake</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-final">0</div><div>Finalized</div></div>
+    </div>
+    <div class="chart-container">
+        <canvas id="statusChart" width="300" height="300"></canvas>
+        <div id="center-percent" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 28px; font-weight: bold;"></div>
+    </div>
+    <div class="filters">
+        <select id="f-subject"><option value="">All Narasumber</option></select>
+        <select id="f-editor" class="hidden"><option value="">All Editor</option></select>
+        <select id="f-status"><option value="">All Status</option></select>
+        <input type="text" id="f-search" placeholder="Cari judul..." onkeyup="filterTable()">
+    </div>
+    <div style="overflow-x: auto;">
+        <table>
+            <thead><tr><th><input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this.checked)"></th><th>Title</th><th>Narasumber</th><th>Host</th><th>Editor</th><th>Deadline</th><th>Status</th><th>RAW</th><th>Res</th><th>Rev</th><th>Note</th><th>Action</th></tr></thead>
+            <tbody id="main-table-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MONITORING PAGE -->
+<div id="monitoring-page" class="dashboard-container" style="display: none;">
+    <div class="header">
+        <div id="monitoring-title-text"></div>
+        <div><button class="btn-main" onclick="backToLogin()">Kembali</button></div>
+    </div>
+    <div class="stats-row">
+        <div class="stat-card"><span id="mon-sum-editor">0</span> Editor</div>
+        <div class="stat-card"><span id="mon-sum-subject">0</span> Narasumber</div>
+        <div class="stat-card"><span id="mon-sum-video">0</span> Video</div>
+    </div>
+    <div class="filters">
+        <select id="mon-f-subject"></select>
+        <select id="mon-f-editor"></select>
+        <select id="mon-f-status"></select>
+        <button class="btn-main" onclick="renderMonitoringTable()">Filter</button>
+    </div>
+    <div style="overflow-x: auto;">
+        <table><thead><tr><th>Title</th><th>Narasumber</th><th>Host</th><th>Editor</th><th>Deadline</th><th>Status</th><th>RAW</th><th>Res</th><th>Rev</th><th>Note</th></tr></thead><tbody id="monitoring-table-body"></tbody></table>
+    </div>
+</div>
+
+<!-- MODALS -->
+<div id="modalNewProject" class="modal"><div class="modal-content"><h3>Buat Episode Baru</h3><input type="text" id="n-title" placeholder="Judul"><select id="n-subject"></select><input type="text" id="n-host" placeholder="Host"><select id="n-editor"></select><input type="date" id="n-deadline"><input type="url" id="n-raw" placeholder="Link RAW"><button class="btn-main" onclick="saveNewProject()">Simpan</button><button onclick="closeModal('modalNewProject')">Batal</button></div></div>
+
+<div id="modalAction" class="modal"><div class="modal-content"><h3>Edit Project</h3><input type="text" id="a-title" placeholder="Title"><select id="a-subject"></select><input type="text" id="a-host" placeholder="Host"><select id="a-status" onchange="handleStatusChange()"></select><input type="date" id="a-deadline"><select id="a-change-editor"></select><input type="url" id="a-result" placeholder="Result Link"><input type="url" id="a-revision" placeholder="Revision Link"><textarea id="a-note" rows="3" placeholder="Note"></textarea><div id="admin-action-area" class="hidden"><button class="btn-main" onclick="saveAction()">Update</button><button class="btn-danger" onclick="deleteProject()">Hapus</button></div><div id="editor-action-area" class="hidden"></div><button onclick="closeModal('modalAction')">Tutup</button></div></div>
+
+<div id="modalManagement" class="modal"><div class="modal-content"><h3>Pengaturan</h3><label>Folder Material:</label><input type="text" id="m-global"><label>Folder Result:</label><input type="text" id="m-result"><label>Folder Revision:</label><input type="text" id="m-rev"><label>WA Grup Revision:</label><input type="text" id="m-wa-review"><label>WA Grup Retake:</label><input type="text" id="m-wa-retake"><label>WA Admin:</label><input type="text" id="m-admin-wa"><label>Token Fontee:</label><input type="password" id="m-fontee-token"><label>Endpoint Fontee:</label><input type="text" id="m-fontee-endpoint"><label>Country Code:</label><input type="text" id="m-country-code"><hr><h4>Daftar Editor</h4><div id="m-editor-list"></div><div><input type="text" id="m-new-editor-name" placeholder="Nama"><input type="text" id="m-new-editor-wa" placeholder="WA"><button onclick="addEditor()">+</button></div><h4>Daftar Narasumber</h4><div id="m-subject-list"></div><div><input type="text" id="m-new-subject" placeholder="Narasumber"><button onclick="addSubject()">+</button></div><button class="btn-main" onclick="saveManagement()">Simpan Semua</button><button onclick="closeModal('modalManagement')">Tutup</button></div></div>
+
+<div id="modalWaCustom" class="modal"><div class="modal-content"><h3>Kirim WA Custom</h3><select id="wa-recipient-select" onchange="handleWaRecipientChange()"><option value="">-- Pilih Editor --</option></select><input type="text" id="wa-recipient-number" placeholder="Nomor WA"><textarea id="wa-custom-message" rows="5" placeholder="Pesan"></textarea><button class="btn-main" onclick="sendCustomWA()">Kirim</button><button onclick="closeModal('modalWaCustom')">Batal</button></div></div>
+
+<div id="modalLeaderboard" class="modal"><div class="modal-content" style="max-width: 90%; width: auto;"><h3>Leaderboard Skor Editor</h3><div style="overflow-x: auto;"><table><thead><tr><th>Peringkat</th><th>Nama Editor</th><th>Total Project</th><th>Tepat Waktu</th><th>Hari Terlambat</th><th>Revisi</th><th>Retake</th><th>Skor</th><th>Aksi</th></tr></thead><tbody id="leaderboard-modal-body"></tbody></table></div><button onclick="closeModal('modalLeaderboard')">Tutup</button></div></div>
+
+<!-- WA LOG FLOAT -->
+<div id="waLogFloat" class="wa-log-float hidden" onclick="toggleLogPopup()"><i class="fa-brands fa-whatsapp fa-2x"></i><span id="waLogBadge" class="wa-log-badge">0</span></div>
+<div id="waLogPopup" class="wa-log-popup"><div class="wa-panel-header">Log WhatsApp <button onclick="toggleLogPopup()">✕</button></div><div id="waLogBody" style="padding: 10px; overflow-y: auto; max-height: 400px;"></div></div>
+
+<!-- WA PANEL SIDE -->
+<div id="wa-panel" class="wa-panel"><div class="wa-panel-header"><span>WhatsApp Panel</span><button id="close-wa-panel">✕</button></div><div class="wa-panel-body"><div><label><input type="checkbox" id="user-notif-toggle"> Aktifkan notifikasi ke editor</label></div><hr><button id="send-deadline-btn" class="btn-main" style="width:100%; margin: 8px 0;">Kirim Pengingat Deadline</button><hr><textarea id="broadcast-all-message" rows="3" placeholder="Pesan broadcast ke semua editor"></textarea><button id="send-broadcast-all-btn" class="btn-main" style="width:100%; margin-top:8px;">Kirim Broadcast</button><hr><select id="personal-editor-select"><option value="">Pilih Editor</option></select><textarea id="personal-message" rows="3" placeholder="Pesan personal"></textarea><button id="send-personal-btn" class="btn-main" style="width:100%; margin-top:8px;">Kirim Personal</button></div><div class="wa-panel-footer"><div id="wa-panel-status">Siap</div></div></div>
+
+<script>
+// ==================== REGISTER CHART PLUGIN (AMAN) ====================
+if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+    Chart.register(ChartDataLabels);
+} else {
+    console.warn('Chart or DataLabels plugin not loaded yet');
+}
 
 // ==================== KONFIGURASI & STATE ====================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuTNChjKRB5JHP5lxbZB8qqRwLZHUpTxWyldX2UpFNQyyPIXatGZzUySlbLHjFO0XyBw/exec';
@@ -108,16 +281,14 @@ const sortProjectsByNewest = (arr) => arr.sort((a, b) => new Date(b.timestamp ||
 
 // ==================== FUNGSI KIRIM WA VIA BACKEND ====================
 const sendWABackend = async (target, msg, projectTitle = '', status = '') => {
-    console.log(`📤 sendWABackend dipanggil: target=${target}, project=${projectTitle}, status=${status}`);
+    console.log(`📤 sendWABackend: target=${target}, project=${projectTitle}, status=${status}`);
     if (!target) {
-        console.warn('sendWABackend: target kosong');
         addWALog('(no number)', projectTitle, status, msg.substring(0, 50), false);
         return false;
     }
     const editorNumbers = editors.map(e => e.wa).filter(Boolean);
     const isEditorNumber = editorNumbers.includes(target);
     if (isEditorNumber && !settingsData.userNotifActive) {
-        console.log('Notifikasi user nonaktif, pengiriman ke ' + target + ' dibatalkan');
         addWALog(target, projectTitle, status, 'Notifikasi user nonaktif', false);
         return false;
     }
@@ -129,7 +300,6 @@ const sendWABackend = async (target, msg, projectTitle = '', status = '') => {
         const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
         const data = await res.json();
         const success = data.success === true;
-        console.log(`📨 Respons backend: success=${success}`, data);
         const recipient = editors.find(e => e.wa === target)?.name || target;
         addWALog(recipient, projectTitle, status, msg.substring(0, 50), success);
         return success;
@@ -144,7 +314,6 @@ window.sendWABackend = sendWABackend;
 const sendWAToMultiple = async (targets, msg, title, st) => {
     if (!targets) { console.warn('sendWAToMultiple: targets kosong'); return; }
     const list = String(targets).split(',').map(t => t.trim()).filter(Boolean);
-    console.log(`📨 Mengirim WA ke multiple: ${list.join(', ')}`);
     for (const num of list) {
         await sendWABackend(num, msg, title, st);
         await new Promise(r => setTimeout(r, 1000));
@@ -216,12 +385,10 @@ window.refreshData = async function () {
         document.getElementById('sum-video').innerText = projects.length;
 
         const matLink = document.getElementById('global-material-link');
-        if (settingsData.podcastMaterial) {
-            matLink.href = settingsData.podcastMaterial;
-        } else if (settingsData.global) {
-            matLink.href = settingsData.global;
-        } else {
-            matLink.href = '#';
+        if (matLink) {
+            if (settingsData.podcastMaterial) matLink.href = settingsData.podcastMaterial;
+            else if (settingsData.global) matLink.href = settingsData.global;
+            else matLink.href = '#';
         }
 
         updateAllTitles();
@@ -238,17 +405,17 @@ window.refreshData = async function () {
         if (document.getElementById('monitoring-page').style.display === 'block') refreshMonitoringPage();
 
         if (currentUser === 'admin') {
-            document.getElementById('waLogFloat').classList.remove('hidden');
-            // Sembunyikan leaderboard non-modal karena kita pakai modal
-            const leaderboardSection = document.getElementById('section-leaderboard');
-            if (leaderboardSection) {
-                leaderboardSection.style.display = 'none';
-            }
+            const waFloat = document.getElementById('waLogFloat');
+            if (waFloat) waFloat.classList.remove('hidden');
+            const toggleBtn = document.getElementById('toggle-wa-panel-btn');
+            if (toggleBtn) toggleBtn.classList.remove('hidden');
         } else {
-            document.getElementById('waLogFloat').classList.add('hidden');
-            document.getElementById('waLogPopup').style.display = 'none';
-            const leaderboardSection = document.getElementById('section-leaderboard');
-            if (leaderboardSection) leaderboardSection.style.display = 'none';
+            const waFloat = document.getElementById('waLogFloat');
+            if (waFloat) waFloat.classList.add('hidden');
+            const toggleBtn = document.getElementById('toggle-wa-panel-btn');
+            if (toggleBtn) toggleBtn.classList.add('hidden');
+            const waPopup = document.getElementById('waLogPopup');
+            if (waPopup) waPopup.style.display = 'none';
         }
     } catch (e) {
         console.error(e);
@@ -261,9 +428,12 @@ window.refreshData = async function () {
 function updateAllTitles() {
     const title = settingsData.podcastName || settingsData.loginTitle;
     document.title = title + ' - Production Suite';
-    document.getElementById('login-title').innerText = title;
-    document.getElementById('dashboard-title').innerText = title + ' - Production Suite';
-    document.getElementById('monitoring-title-text').innerText = 'Monitoring ' + title;
+    const loginTitle = document.getElementById('login-title');
+    if (loginTitle) loginTitle.innerText = title;
+    const dashboardTitle = document.getElementById('dashboard-title');
+    if (dashboardTitle) dashboardTitle.innerText = title + ' - Production Suite';
+    const monitoringTitle = document.getElementById('monitoring-title-text');
+    if (monitoringTitle) monitoringTitle.innerText = 'Monitoring ' + title;
 }
 
 // ==================== SINKRONISASI DROPDOWN ====================
@@ -272,7 +442,7 @@ const syncDropdowns = () => {
     if (subj) {
         let opts = '<option value="">All Narasumber</option>';
         const relevant = (currentUser === 'admin') ? subjects : [...new Set(projects.filter(p => p.editor === currentUser).map(p => p.subject).filter(Boolean))];
-        relevant.forEach(s => { if (s) opts += `<option value="${s}">${s}</option>`; });
+        relevant.forEach(s => { if (s) opts += `<option value="${s}">${escapeHtml(s)}</option>`; });
         subj.innerHTML = opts;
     }
     const sts = document.getElementById('f-status');
@@ -280,17 +450,17 @@ const syncDropdowns = () => {
         sts.innerHTML = '<option value="">All Status</option>' + ['To do', 'In Progress', 'Review', 'Revision', 'Retake', 'Finalized'].map(s => `<option value="${s}">${s}</option>`).join('');
     }
     const nSubj = document.getElementById('n-subject');
-    if (nSubj) nSubj.innerHTML = subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+    if (nSubj) nSubj.innerHTML = subjects.map(s => `<option value="${s}">${escapeHtml(s)}</option>`).join('');
     const nEd = document.getElementById('n-editor');
-    if (nEd) nEd.innerHTML = editors.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+    if (nEd) nEd.innerHTML = editors.map(e => `<option value="${e.name}">${escapeHtml(e.name)}</option>`).join('');
     if (currentUser === 'admin') {
         const ed = document.getElementById('f-editor');
         if (ed) {
-            ed.innerHTML = '<option value="">All Editor</option>' + editors.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+            ed.innerHTML = '<option value="">All Editor</option>' + editors.map(e => `<option value="${e.name}">${escapeHtml(e.name)}</option>`).join('');
             ed.classList.remove('hidden');
         }
         const waSel = document.getElementById('wa-recipient-select');
-        if (waSel) waSel.innerHTML = '<option value="">-- Pilih Editor --</option>' + editors.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+        if (waSel) waSel.innerHTML = '<option value="">-- Pilih Editor --</option>' + editors.map(e => `<option value="${e.name}">${escapeHtml(e.name)}</option>`).join('');
     } else {
         const ed = document.getElementById('f-editor');
         if (ed) ed.classList.add('hidden');
@@ -304,10 +474,12 @@ window.renderTable = function () {
         const fSub = document.getElementById('f-subject')?.value || '';
         const fEd = (currentUser === 'admin') ? document.getElementById('f-editor')?.value || '' : '';
         const fSt = document.getElementById('f-status')?.value || '';
+        const fSearch = document.getElementById('f-search')?.value.toLowerCase() || '';
 
         let filtered = projects.map(p => ({ ...p, displayStatus: normalizeStatus(p.status) }));
         if (currentUser !== 'admin') filtered = filtered.filter(p => p.editor === currentUser);
         filtered = filtered.filter(p => (!fSub || p.subject === fSub) && (!fEd || p.editor === fEd) && (!fSt || p.displayStatus === fSt));
+        if (fSearch) filtered = filtered.filter(p => p.title.toLowerCase().includes(fSearch));
         filtered = sortProjectsByNewest(filtered);
 
         const tbody = document.getElementById('main-table-body');
@@ -327,16 +499,16 @@ window.renderTable = function () {
             const checked = selectedRows.has(p.rowIndex) ? 'checked' : '';
             html += `<tr>
                 <td data-label="Pilih" style="text-align:center;"><input type="checkbox" class="row-checkbox" data-rowindex="${p.rowIndex}" ${checked} onclick="toggleRowSelection(${p.rowIndex}, this.checked)"></td>
-                <td data-label="Title"><b>${p.title || ''}</b></td>
-                <td data-label="Narasumber">${p.subject || ''}</td>
-                <td data-label="Host">${p.host || ''}</td>
-                <td data-label="Editor">${p.editor || ''}</td>
+                <td data-label="Title"><b>${escapeHtml(p.title)}</b></td>
+                <td data-label="Narasumber">${escapeHtml(p.subject)}</td>
+                <td data-label="Host">${escapeHtml(p.host)}</td>
+                <td data-label="Editor">${escapeHtml(p.editor)}</td>
                 <td data-label="Deadline" class="${deadlineClass}">${formatDateDisplay(p.deadline)}</td>
                 <td data-label="Status"><span class="pill ${isRev ? 'pill-revision' : ''}" style="${isRev ? '' : 'background:' + color}">${p.displayStatus}</span></td>
                 <td data-label="RAW">${p.raw ? `<a href="${p.raw}" target="_blank" class="btn-main btn-gray" style="padding:5px"><i class="fa-solid fa-link"></i></a>` : '-'}</td>
                 <td data-label="Res">${p.result ? `<a href="${p.result}" target="_blank" class="btn-main btn-gray" style="padding:5px"><i class="fa-solid fa-play"></i></a>` : '-'}</td>
                 <td data-label="Rev">${p.revision ? `<a href="${p.revision}" target="_blank" class="btn-main btn-gray" style="padding:5px"><i class="fa-solid fa-rotate"></i></a>` : '-'}</td>
-                <td data-label="Note" class="note-cell">${hasNote ? `<div id="${noteId}" class="note-text">${noteText}</div><button class="note-more-btn" onclick="toggleNote('${noteId}')">more</button>` : '-'}</td>
+                <td data-label="Note" class="note-cell">${hasNote ? `<div id="${noteId}" class="note-text">${escapeHtml(noteText)}</div><button class="note-more-btn" onclick="toggleNote('${noteId}')">more</button>` : '-'}</td>
                 <td data-label="Action"><button class="btn-main btn-gray" onclick="openAction(${p.rowIndex})">Edit</button></td>
             </tr>`;
         });
@@ -352,7 +524,8 @@ window.renderTable = function () {
 
         const nearCount = filtered.filter(isNearDeadline).length;
         document.getElementById('sum-deadline-warning').innerText = nearCount;
-        document.getElementById('deadline-warning-item').style.display = nearCount ? 'flex' : 'none';
+        const deadlineWarningItem = document.getElementById('deadline-warning-item');
+        if (deadlineWarningItem) deadlineWarningItem.style.display = nearCount ? 'flex' : 'none';
 
         updateStatsAndChart(filtered);
     } catch (e) { console.error('Render error', e); }
@@ -373,25 +546,31 @@ const updateStatsAndChart = (data) => {
     document.getElementById('stat-final').innerText = fin;
     const total = data.length || 1;
     const percent = Math.round((fin / total) * 100);
-    document.getElementById('center-percent').innerText = percent + '%';
+    const center = document.getElementById('center-percent');
+    if (center) center.innerText = percent + '%';
     if (myChart) myChart.destroy();
     const ctx = document.getElementById('statusChart').getContext('2d');
-    myChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels: ['To do', 'In Progress', 'Review', 'Revision', 'Retake', 'Finalized'], datasets: [{ data: [todo, prog, rev, revis, ret, fin], backgroundColor: ['#007AFF', '#FFCC00', '#5856D6', '#FF3B30', '#E67E22', '#34C759'], borderWidth: 0 }] },
-        options: { cutout: '70%', plugins: { legend: { display: false }, datalabels: { display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0, backgroundColor: (ctx) => ctx.dataset.backgroundColor[ctx.dataIndex], borderRadius: 4, color: 'white', font: { weight: 'bold', size: 10 }, padding: { top: 2, bottom: 2, left: 6, right: 6 }, formatter: (val, ctx) => { const total = ctx.dataset.data.reduce((a, b) => a + b, 0); return total ? Math.round((val / total) * 100) + '%' : '0%'; } } } }
-    });
+    if (typeof Chart !== 'undefined') {
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: ['To do', 'In Progress', 'Review', 'Revision', 'Retake', 'Finalized'], datasets: [{ data: [todo, prog, rev, revis, ret, fin], backgroundColor: ['#007AFF', '#FFCC00', '#5856D6', '#FF3B30', '#E67E22', '#34C759'], borderWidth: 0 }] },
+            options: { cutout: '70%', plugins: { legend: { display: false }, datalabels: { display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0, backgroundColor: (ctx) => ctx.dataset.backgroundColor[ctx.dataIndex], borderRadius: 4, color: 'white', font: { weight: 'bold', size: 10 }, padding: { top: 2, bottom: 2, left: 6, right: 6 }, formatter: (val, ctx) => { const total = ctx.dataset.data.reduce((a, b) => a + b, 0); return total ? Math.round((val / total) * 100) + '%' : '0%'; } } } }
+        });
+    }
 };
 
 // ==================== MONITORING ====================
 window.refreshMonitoringPage = () => {
-    document.getElementById('mon-sum-editor').innerText = editors.length;
-    document.getElementById('mon-sum-subject').innerText = subjects.length;
-    document.getElementById('mon-sum-video').innerText = projects.length;
+    const monSumEditor = document.getElementById('mon-sum-editor');
+    if (monSumEditor) monSumEditor.innerText = editors.length;
+    const monSumSubject = document.getElementById('mon-sum-subject');
+    if (monSumSubject) monSumSubject.innerText = subjects.length;
+    const monSumVideo = document.getElementById('mon-sum-video');
+    if (monSumVideo) monSumVideo.innerText = projects.length;
     const monSub = document.getElementById('mon-f-subject');
-    if (monSub) monSub.innerHTML = '<option value="">All Narasumber</option>' + subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+    if (monSub) monSub.innerHTML = '<option value="">All Narasumber</option>' + subjects.map(s => `<option value="${s}">${escapeHtml(s)}</option>`).join('');
     const monEd = document.getElementById('mon-f-editor');
-    if (monEd) monEd.innerHTML = '<option value="">All Editor</option>' + editors.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+    if (monEd) monEd.innerHTML = '<option value="">All Editor</option>' + editors.map(e => `<option value="${e.name}">${escapeHtml(e.name)}</option>`).join('');
     const monSt = document.getElementById('mon-f-status');
     if (monSt) monSt.innerHTML = '<option value="">All Status</option>' + ['To do', 'In Progress', 'Review', 'Revision', 'Retake', 'Finalized'].map(s => `<option value="${s}">${s}</option>`).join('');
     renderMonitoringTable();
@@ -408,10 +587,10 @@ window.renderMonitoringTable = () => {
     let html = '';
     filtered.forEach(p => {
         html += `<tr>
-            <td data-label="Title">${p.title || ''}</td>
-            <td data-label="Narasumber">${p.subject || ''}</td>
-            <td data-label="Host">${p.host || ''}</td>
-            <td data-label="Editor">${p.editor || ''}</td>
+            <td data-label="Title">${escapeHtml(p.title)}</td>
+            <td data-label="Narasumber">${escapeHtml(p.subject)}</td>
+            <td data-label="Host">${escapeHtml(p.host)}</td>
+            <td data-label="Editor">${escapeHtml(p.editor)}</td>
             <td data-label="Deadline">${formatDateDisplay(p.deadline)}</td>
             <td data-label="Status"><span class="pill" style="background:${getStatusColor(p.displayStatus)}">${p.displayStatus}</span></td>
             <td data-label="RAW">${p.raw ? '🔗' : '-'}</td>
@@ -443,61 +622,64 @@ async function loadEditorScore(editorName) {
     try {
         const res = await fetch(`${SCRIPT_URL}?action=GET_EDITOR_SCORE&editor=${encodeURIComponent(editorName)}&podcast=${podcastId}&nocache=${Date.now()}`);
         const data = await res.json();
-        if (data.success) {
-            document.getElementById('score-value').innerText = data.score;
-        } else {
-            document.getElementById('score-value').innerText = '0';
-        }
+        const scoreSpan = document.getElementById('score-value');
+        if (scoreSpan) scoreSpan.innerText = data.success ? data.score : '0';
     } catch (err) {
         console.error('Gagal memuat skor editor', err);
-        document.getElementById('score-value').innerText = '0';
+        const scoreSpan = document.getElementById('score-value');
+        if (scoreSpan) scoreSpan.innerText = '0';
     }
 }
 
-// Leaderboard non-modal sudah tidak dipakai
-async function loadLeaderboard() {
-    // Tidak digunakan
-}
-
 const showDashboard = () => {
-    document.getElementById('login-page').style.display = 'none';
-    document.getElementById('monitoring-page').style.display = 'none';
-    document.getElementById('dashboard-page').style.display = 'block';
-    document.getElementById('greetings').innerText = 'Halo, ' + (currentUser === 'admin' ? 'Admin' : currentUser.toUpperCase());
+    const loginPage = document.getElementById('login-page');
+    const monitoringPage = document.getElementById('monitoring-page');
+    const dashboardPage = document.getElementById('dashboard-page');
+    if (loginPage) loginPage.style.display = 'none';
+    if (monitoringPage) monitoringPage.style.display = 'none';
+    if (dashboardPage) dashboardPage.style.display = 'block';
+    const greetings = document.getElementById('greetings');
+    if (greetings) greetings.innerText = 'Halo, ' + (currentUser === 'admin' ? 'Admin' : currentUser.toUpperCase());
 
+    const adminControls = document.getElementById('admin-controls');
+    const adminWaCustom = document.getElementById('admin-wa-custom-btn');
+    const fEditor = document.getElementById('f-editor');
+    const waLogFloat = document.getElementById('waLogFloat');
+    const toggleWaPanel = document.getElementById('toggle-wa-panel-btn');
+    const scoreContainer = document.getElementById('editor-score-container');
     if (currentUser === 'admin') {
-        document.getElementById('admin-controls').classList.remove('hidden');
-        document.getElementById('admin-wa-custom-btn').classList.remove('hidden');
-        document.getElementById('f-editor').classList.remove('hidden');
-        document.getElementById('waLogFloat').classList.remove('hidden');
-        document.getElementById('toggle-wa-panel-btn').classList.remove('hidden');
-        const scoreContainer = document.getElementById('editor-score-container');
+        if (adminControls) adminControls.classList.remove('hidden');
+        if (adminWaCustom) adminWaCustom.classList.remove('hidden');
+        if (fEditor) fEditor.classList.remove('hidden');
+        if (waLogFloat) waLogFloat.classList.remove('hidden');
+        if (toggleWaPanel) toggleWaPanel.classList.remove('hidden');
         if (scoreContainer) scoreContainer.style.display = 'none';
     } else {
-        document.getElementById('admin-controls').classList.add('hidden');
-        document.getElementById('admin-wa-custom-btn').classList.add('hidden');
-        document.getElementById('f-editor').classList.add('hidden');
-        document.getElementById('waLogFloat').classList.add('hidden');
-        document.getElementById('toggle-wa-panel-btn').classList.add('hidden');
-        document.getElementById('waLogPopup').style.display = 'none';
-
-        const scoreContainer = document.getElementById('editor-score-container');
-        if (scoreContainer) {
-            scoreContainer.style.display = 'block';
-            loadEditorScore(currentUser);
-        }
+        if (adminControls) adminControls.classList.add('hidden');
+        if (adminWaCustom) adminWaCustom.classList.add('hidden');
+        if (fEditor) fEditor.classList.add('hidden');
+        if (waLogFloat) waLogFloat.classList.add('hidden');
+        if (toggleWaPanel) toggleWaPanel.classList.add('hidden');
+        if (scoreContainer) scoreContainer.style.display = 'block';
+        loadEditorScore(currentUser);
     }
 };
 window.handleLogout = () => { localStorage.removeItem('podcastSession'); location.reload(); };
 window.backToLogin = () => {
-    document.getElementById('monitoring-page').style.display = 'none';
-    document.getElementById('dashboard-page').style.display = 'none';
-    document.getElementById('login-page').style.display = 'flex';
+    const monitoringPage = document.getElementById('monitoring-page');
+    const dashboardPage = document.getElementById('dashboard-page');
+    const loginPage = document.getElementById('login-page');
+    if (monitoringPage) monitoringPage.style.display = 'none';
+    if (dashboardPage) dashboardPage.style.display = 'none';
+    if (loginPage) loginPage.style.display = 'flex';
 };
 window.enterMonitoring = async () => {
-    document.getElementById('login-page').style.display = 'none';
-    document.getElementById('dashboard-page').style.display = 'none';
-    document.getElementById('monitoring-page').style.display = 'block';
+    const loginPage = document.getElementById('login-page');
+    const dashboardPage = document.getElementById('dashboard-page');
+    const monitoringPage = document.getElementById('monitoring-page');
+    if (loginPage) loginPage.style.display = 'none';
+    if (dashboardPage) dashboardPage.style.display = 'none';
+    if (monitoringPage) monitoringPage.style.display = 'block';
     if (!projects.length) await refreshData();
     refreshMonitoringPage();
 };
@@ -509,7 +691,8 @@ window.openNewProjectModal = () => {
     const yyyy = deadline.getFullYear();
     const mm = String(deadline.getMonth() + 1).padStart(2, '0');
     const dd = String(deadline.getDate()).padStart(2, '0');
-    document.getElementById('n-deadline').value = `${yyyy}-${mm}-${dd}`;
+    const deadlineInput = document.getElementById('n-deadline');
+    if (deadlineInput) deadlineInput.value = `${yyyy}-${mm}-${dd}`;
     openModal('modalNewProject');
 };
 window.saveNewProject = async () => {
@@ -555,7 +738,7 @@ window.openAction = (idx) => {
     document.getElementById('a-revision').value = p.revision || '';
     document.getElementById('a-note').value = p.note || '';
     const subj = document.getElementById('a-subject');
-    subj.innerHTML = subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+    subj.innerHTML = subjects.map(s => `<option value="${s}">${escapeHtml(s)}</option>`).join('');
     subj.value = p.subject || '';
     document.getElementById('a-host').value = p.host || '';
     if (currentUser === 'admin') {
@@ -567,10 +750,12 @@ window.openAction = (idx) => {
     }
     const sts = document.getElementById('a-status');
     const edSel = document.getElementById('a-change-editor');
-    edSel.innerHTML = editors.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+    edSel.innerHTML = editors.map(e => `<option value="${e.name}">${escapeHtml(e.name)}</option>`).join('');
     if (currentUser === 'admin') {
-        document.getElementById('admin-action-area').classList.remove('hidden');
-        document.getElementById('editor-action-area').classList.add('hidden');
+        const adminArea = document.getElementById('admin-action-area');
+        const editorArea = document.getElementById('editor-action-area');
+        if (adminArea) adminArea.classList.remove('hidden');
+        if (editorArea) editorArea.classList.add('hidden');
         sts.innerHTML = ['To do', 'In Progress', 'Review', 'Revision', 'Retake', 'Finalized'].map(s => `<option value="${s}">${s}</option>`).join('');
         document.getElementById('a-title').disabled = false;
         document.getElementById('a-deadline').disabled = false;
@@ -578,18 +763,22 @@ window.openAction = (idx) => {
         edSel.disabled = false;
         edSel.value = p.editor;
     } else {
-        document.getElementById('admin-action-area').classList.add('hidden');
-        document.getElementById('editor-action-area').classList.remove('hidden');
+        const adminArea = document.getElementById('admin-action-area');
+        const editorArea = document.getElementById('editor-action-area');
+        if (adminArea) adminArea.classList.add('hidden');
+        if (editorArea) editorArea.classList.remove('hidden');
         sts.innerHTML = ['To do', 'In Progress', 'Review', 'Retake'].map(s => `<option value="${s}">${s}</option>`).join('');
         document.getElementById('a-title').disabled = true;
         document.getElementById('a-deadline').disabled = true;
         document.getElementById('a-note').disabled = false;
         edSel.disabled = true;
         edSel.value = p.editor;
-        document.getElementById('editor-action-area').innerHTML = `
-            <button class="btn-main" style="width:100%" onclick="window.saveAction()">Save</button>
-            <button class="btn-main" style="background:#FF3B30; width:100%; margin-top:8px;" onclick="window.rejectTask()">Tolak Tugas</button>
-        `;
+        if (editorArea) {
+            editorArea.innerHTML = `
+                <button class="btn-main" style="width:100%" onclick="saveAction()">Save</button>
+                <button class="btn-main" style="background:#FF3B30; width:100%; margin-top:8px;" onclick="rejectTask()">Tolak Tugas</button>
+            `;
+        }
     }
     sts.value = p.status;
     handleStatusChange();
@@ -663,63 +852,50 @@ window.saveAction = async () => {
             const project = projects.find(p => p.rowIndex === activeRowIndex);
             const editorName = document.getElementById('a-change-editor').value;
             const editor = editors.find(e => e.name === editorName);
+            // Ambil nilai dari form untuk link terbaru
+            const newResult = document.getElementById('a-result').value;
+            const newRevision = document.getElementById('a-revision').value;
+            const newTitle = document.getElementById('a-title').value;
+            const newSubject = document.getElementById('a-subject').value;
+            const newHost = document.getElementById('a-host').value;
+            const newDeadline = document.getElementById('a-deadline').value;
+            const noteText = note;
+
             if (currentUser === 'admin') {
                 let link = '', linkLabel = '';
-                if (st === 'Revision' || st === 'Review') { link = project.result || ''; linkLabel = 'Result'; } else { link = project.raw || ''; linkLabel = 'RAW'; }
+                if (st === 'Revision' || st === 'Review') { link = newResult; linkLabel = 'Result'; } else { link = project?.raw || ''; linkLabel = 'RAW'; }
                 if (editor) {
                     if (!editor.wa) {
                         alert(`Nomor WA untuk editor ${editor.name} tidak terisi! WA tidak dikirim.`);
                     } else {
                         const msg = window.buildAdminToUserMessage(
-                            editor.name,
-                            document.getElementById('a-title').value,
-                            document.getElementById('a-subject').value,
-                            document.getElementById('a-host').value,
-                            st,
-                            document.getElementById('a-deadline').value,
-                            note,
-                            link,
-                            linkLabel
+                            editor.name, newTitle, newSubject, newHost, st, newDeadline, noteText, link, linkLabel
                         );
-                        console.log(`📨 Mengirim WA ke editor ${editor.name} (${editor.wa})`);
-                        await sendWABackend(editor.wa, msg, document.getElementById('a-title').value, st);
+                        await sendWABackend(editor.wa, msg, newTitle, st);
                     }
                 } else { alert('Editor tidak ditemukan! WA tidak dikirim.'); }
 
                 if (st === 'Revision' && settingsData.waRev) {
-                    const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', document.getElementById('a-title').value, document.getElementById('a-subject').value, document.getElementById('a-host').value, st, document.getElementById('a-deadline').value, note, link, linkLabel);
-                    console.log(`📨 Mengirim WA ke grup Revision: ${settingsData.waRev}`);
-                    await sendWAToMultiple(settingsData.waRev, msg, document.getElementById('a-title').value, st);
+                    const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', newTitle, newSubject, newHost, st, newDeadline, noteText, link, linkLabel);
+                    await sendWAToMultiple(settingsData.waRev, msg, newTitle, st);
                 }
                 if (st === 'Retake' && settingsData.waRet) {
-                    const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', document.getElementById('a-title').value, document.getElementById('a-subject').value, document.getElementById('a-host').value, st, document.getElementById('a-deadline').value, note, link, linkLabel);
-                    console.log(`📨 Mengirim WA ke grup Retake: ${settingsData.waRet}`);
-                    await sendWAToMultiple(settingsData.waRet, msg, document.getElementById('a-title').value, st);
+                    const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', newTitle, newSubject, newHost, st, newDeadline, noteText, link, linkLabel);
+                    await sendWAToMultiple(settingsData.waRet, msg, newTitle, st);
                 }
                 if (settingsData.adminWa) {
-                    const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', document.getElementById('a-title').value, document.getElementById('a-subject').value, document.getElementById('a-host').value, st, document.getElementById('a-deadline').value, note, link, linkLabel);
-                    console.log(`📨 Mengirim WA ke admin: ${settingsData.adminWa}`);
-                    await sendWAToMultiple(settingsData.adminWa, msg, document.getElementById('a-title').value, st);
+                    const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', newTitle, newSubject, newHost, st, newDeadline, noteText, link, linkLabel);
+                    await sendWAToMultiple(settingsData.adminWa, msg, newTitle, st);
                 }
             } else {
                 if (settingsData.fonteetoken) {
-                    const editorName = currentUser;
                     let link = '', linkLabel = '';
-                    if (st === 'Review') { link = project.result || ''; linkLabel = 'Result'; }
-                    else if (st === 'Revision') { link = project.revision || ''; linkLabel = 'Revision'; }
-                    const msg = window.buildUserToAdminMessage(editorName, project.title, project.subject, project.host, st, project.deadline, note, link, linkLabel);
-                    if (settingsData.adminWa) {
-                        console.log(`📨 Editor mengirim WA ke admin: ${settingsData.adminWa}`);
-                        await sendWAToMultiple(settingsData.adminWa, msg, project.title, st);
-                    }
-                    if (st === 'Revision' && settingsData.waRev) {
-                        console.log(`📨 Editor mengirim WA ke grup Revision: ${settingsData.waRev}`);
-                        await sendWAToMultiple(settingsData.waRev, msg, project.title, st);
-                    }
-                    if (st === 'Retake' && settingsData.waRet) {
-                        console.log(`📨 Editor mengirim WA ke grup Retake: ${settingsData.waRet}`);
-                        await sendWAToMultiple(settingsData.waRet, msg, project.title, st);
-                    }
+                    if (st === 'Review') { link = newResult; linkLabel = 'Result'; }
+                    else if (st === 'Revision') { link = newRevision; linkLabel = 'Revision'; }
+                    const msg = window.buildUserToAdminMessage(currentUser, newTitle, newSubject, newHost, st, newDeadline, noteText, link, linkLabel);
+                    if (settingsData.adminWa) await sendWAToMultiple(settingsData.adminWa, msg, newTitle, st);
+                    if (st === 'Revision' && settingsData.waRev) await sendWAToMultiple(settingsData.waRev, msg, newTitle, st);
+                    if (st === 'Retake' && settingsData.waRet) await sendWAToMultiple(settingsData.waRet, msg, newTitle, st);
                 }
             }
             closeModal('modalAction');
@@ -758,8 +934,10 @@ window.openManagement = () => {
     openModal('modalManagement');
 };
 const renderMgmtLists = () => {
-    document.getElementById('m-editor-list').innerHTML = editors.map((e, i) => `<div class="list-item-row"><input type="text" value="${e.name}" onchange="editors[${i}].name=this.value" placeholder="Nama" style="width:45%"><input type="text" value="${e.wa}" onchange="editors[${i}].wa=this.value" placeholder="WA" style="width:40%"><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="editors.splice(${i},1);renderMgmtLists()"></i></div>`).join('');
-    document.getElementById('m-subject-list').innerHTML = subjects.map((s, i) => `<div class="list-item-row"><input type="text" value="${s}" onchange="subjects[${i}]=this.value" style="width:90%"><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="subjects.splice(${i},1);renderMgmtLists()"></i></div>`).join('');
+    const editorList = document.getElementById('m-editor-list');
+    if (editorList) editorList.innerHTML = editors.map((e, i) => `<div class="list-item-row"><input type="text" value="${escapeHtml(e.name)}" onchange="editors[${i}].name=this.value" placeholder="Nama" style="width:45%"><input type="text" value="${escapeHtml(e.wa)}" onchange="editors[${i}].wa=this.value" placeholder="WA" style="width:40%"><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="editors.splice(${i},1);renderMgmtLists()"></i></div>`).join('');
+    const subjectList = document.getElementById('m-subject-list');
+    if (subjectList) subjectList.innerHTML = subjects.map((s, i) => `<div class="list-item-row"><input type="text" value="${escapeHtml(s)}" onchange="subjects[${i}]=this.value" style="width:90%"><i class="fa-solid fa-trash" style="color:red; cursor:pointer;" onclick="subjects.splice(${i},1);renderMgmtLists()"></i></div>`).join('');
 };
 window.addEditor = () => {
     const n = document.getElementById('m-new-editor-name').value.trim();
@@ -805,16 +983,10 @@ window.saveManagement = async () => {
 // ==================== FUNGSI OPEN FOLDER ====================
 window.openFolder = (type) => {
     let url = '';
-    if (type === 'res') {
-        url = settingsData.podcastResult || settingsData.res;
-    } else if (type === 'rev') {
-        url = settingsData.podcastRevision || settingsData.rev;
-    }
-    if (url) {
-        window.open(url, '_blank');
-    } else {
-        alert('Folder belum diatur untuk podcast ini');
-    }
+    if (type === 'res') url = settingsData.podcastResult || settingsData.res;
+    else if (type === 'rev') url = settingsData.podcastRevision || settingsData.rev;
+    if (url) window.open(url, '_blank');
+    else alert('Folder belum diatur untuk podcast ini');
 };
 
 window.handleWaRecipientChange = () => {
@@ -844,7 +1016,8 @@ window.toggleNote = (id) => {
     const el = document.getElementById(id);
     if (el) {
         el.classList.toggle('expanded');
-        el.nextElementSibling.innerText = el.classList.contains('expanded') ? 'less' : 'more';
+        const btn = el.nextElementSibling;
+        if (btn) btn.innerText = el.classList.contains('expanded') ? 'less' : 'more';
     }
 };
 
@@ -885,6 +1058,7 @@ window.deleteSelected = async () => {
         alert('Project terpilih telah dihapus');
     } catch (err) { alert('Gagal menghapus'); console.error(err); } finally { toggleLoading(false); }
 };
+// Tambah tombol delete selected jika belum ada
 (function addDeleteSelectedButton() {
     const adminControls = document.getElementById('admin-controls');
     if (adminControls && !document.getElementById('btn-delete-selected')) {
@@ -940,25 +1114,12 @@ function updatePanelStatus(text, isError = false) {
     if (waPanelStatus) {
         waPanelStatus.innerText = text;
         waPanelStatus.style.color = isError ? '#d32f2f' : '#666';
-        if (isError) {
-            setTimeout(() => {
-                waPanelStatus.innerText = 'Siap';
-                waPanelStatus.style.color = '#666';
-            }, 3000);
-        }
+        if (isError) setTimeout(() => { if (waPanelStatus) { waPanelStatus.innerText = 'Siap'; waPanelStatus.style.color = '#666'; } }, 3000);
     }
 }
 
-if (togglePanelBtn) {
-    togglePanelBtn.addEventListener('click', () => {
-        waPanel.style.transform = waPanel.style.transform === 'translateX(0px)' ? 'translateX(100%)' : 'translateX(0px)';
-    });
-}
-if (closePanelBtn) {
-    closePanelBtn.addEventListener('click', () => {
-        waPanel.style.transform = 'translateX(100%)';
-    });
-}
+if (togglePanelBtn) togglePanelBtn.addEventListener('click', () => { if (waPanel) waPanel.style.transform = waPanel.style.transform === 'translateX(0px)' ? 'translateX(100%)' : 'translateX(0px)'; });
+if (closePanelBtn) closePanelBtn.addEventListener('click', () => { if (waPanel) waPanel.style.transform = 'translateX(100%)'; });
 
 function loadPersonalEditors() {
     if (!personalEditorSelect) return;
@@ -1001,57 +1162,26 @@ if (sendDeadlineBtn) {
     sendDeadlineBtn.addEventListener('click', async function() {
         if (!confirm('Kirim notifikasi deadline ke semua editor yang memiliki project deadline dalam 3 hari ke depan?')) return;
         updatePanelStatus('Mengirim...');
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const threeDaysLater = new Date(today);
-        threeDaysLater.setDate(today.getDate() + 3);
-
+        const today = new Date(); today.setHours(0,0,0,0);
+        const threeDaysLater = new Date(today); threeDaysLater.setDate(today.getDate() + 3);
         const projectsToNotify = projects.filter(p => {
             if (!p.deadline || p.status === 'Finalized') return false;
-            const deadlineDate = new Date(p.deadline);
-            deadlineDate.setHours(0, 0, 0, 0);
+            const deadlineDate = new Date(p.deadline); deadlineDate.setHours(0,0,0,0);
             return deadlineDate >= today && deadlineDate <= threeDaysLater;
         });
-
-        if (projectsToNotify.length === 0) {
-            updatePanelStatus('Tidak ada project dengan deadline dalam 3 hari ke depan', true);
-            return;
-        }
-
+        if (projectsToNotify.length === 0) { updatePanelStatus('Tidak ada project dengan deadline dalam 3 hari ke depan', true); return; }
         let sentCount = 0;
         for (const project of projectsToNotify) {
             const editor = editors.find(e => e.name === project.editor);
-            if (!editor || !editor.wa) {
-                console.log(`Editor ${project.editor} tidak memiliki WA, lewati`);
-                continue;
-            }
-
-            const deadlineDate = new Date(project.deadline);
-            deadlineDate.setHours(0, 0, 0, 0);
-            const diffDays = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
-            let dayLabel = '';
-            if (diffDays === 0) dayLabel = 'HARI INI';
-            else if (diffDays === 1) dayLabel = 'H-1';
-            else if (diffDays === 2) dayLabel = 'H-2';
-            else if (diffDays === 3) dayLabel = 'H-3';
-
+            if (!editor || !editor.wa) continue;
+            const deadlineDate = new Date(project.deadline); deadlineDate.setHours(0,0,0,0);
+            const diffDays = Math.ceil((deadlineDate - today) / (1000*60*60*24));
+            let dayLabel = diffDays === 0 ? 'HARI INI' : `H-${diffDays}`;
             const formattedDeadline = formatDateDisplay(project.deadline);
-            const rawLink = project.raw ? project.raw : '(tidak ada)';
-
-            const msg = `*${settingsData.podcastName || settingsData.loginTitle}*\n\n` +
-                `Halo *${editor.name}*,\n\n` +
-                `Kamu memiliki project dengan deadline *${dayLabel}*:\n\n` +
-                `📌 *Judul*: ${project.title}\n` +
-                `👤 Narasumber: ${project.subject || '-'}\n` +
-                `🎤 Host: ${project.host || '-'}\n` +
-                `📅 Deadline: ${formattedDeadline}\n` +
-                `🔗 RAW: ${rawLink}\n\n` +
-                `Segera selesaikan tugas kamu! Terima kasih. 🙏`;
-
+            const rawLink = project.raw || '(tidak ada)';
+            const msg = `*${settingsData.podcastName || settingsData.loginTitle}*\n\nHalo *${editor.name}*,\n\nKamu memiliki project dengan deadline *${dayLabel}*:\n\n📌 *Judul*: ${project.title}\n👤 Narasumber: ${project.subject || '-'}\n🎤 Host: ${project.host || '-'}\n📅 Deadline: ${formattedDeadline}\n🔗 RAW: ${rawLink}\n\nSegera selesaikan tugas kamu! Terima kasih. 🙏`;
             const success = await sendWABackend(editor.wa, msg, project.title, '');
             if (success) sentCount++;
-
             await new Promise(r => setTimeout(r, 1000));
         }
         updatePanelStatus(`Pesan terkirim untuk ${sentCount} project`);
@@ -1064,7 +1194,6 @@ if (sendBroadcastAllBtn) {
         if (!message) { alert('Pesan tidak boleh kosong'); return; }
         if (!confirm(`Kirim broadcast ke semua editor (${editors.length})?`)) return;
         updatePanelStatus('Mengirim...');
-
         const msg = `*${settingsData.podcastName || settingsData.loginTitle}*\n\n${message}`;
         let sentCount = 0;
         for (const editor of editors) {
@@ -1087,34 +1216,23 @@ if (sendPersonalBtn) {
         updatePanelStatus('Mengirim...');
         const msg = `*${settingsData.podcastName || settingsData.loginTitle}*\n\n${message}`;
         const success = await sendWABackend(target, msg, 'Personal Chat', '');
-        if (success) {
-            updatePanelStatus('Pesan terkirim');
-            personalMessage.value = '';
-        } else {
-            updatePanelStatus('Gagal mengirim', true);
-        }
+        if (success) { updatePanelStatus('Pesan terkirim'); personalMessage.value = ''; }
+        else updatePanelStatus('Gagal mengirim', true);
     });
 }
 
 const originalSyncDropdowns = syncDropdowns;
 window.syncDropdowns = function() {
     originalSyncDropdowns();
-    if (currentUser === 'admin') {
-        loadPersonalEditors();
-    }
+    if (currentUser === 'admin') loadPersonalEditors();
 };
 
 // ==================== MODAL LEADERBOARD ====================
 window.openLeaderboardModal = function() {
     const modal = document.getElementById('modalLeaderboard');
-    if (modal) {
-        modal.style.display = 'flex';
-        loadLeaderboardModal();
-    } else {
-        console.error('Modal leaderboard tidak ditemukan');
-    }
+    if (modal) { modal.style.display = 'flex'; loadLeaderboardModal(); }
+    else console.error('Modal leaderboard tidak ditemukan');
 };
-
 async function loadLeaderboardModal() {
     const tbody = document.getElementById('leaderboard-modal-body');
     if (!tbody) return;
@@ -1122,19 +1240,13 @@ async function loadLeaderboardModal() {
     try {
         const res = await fetch(`${SCRIPT_URL}?action=GET_LEADERBOARD&podcast=${podcastId}&nocache=${Date.now()}`);
         const data = await res.json();
-        if (!data.success || !data.leaderboard) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Gagal memuat data</td></tr>';
-            return;
-        }
-        if (data.leaderboard.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Belum ada data skor</td></tr>';
-            return;
-        }
+        if (!data.success || !data.leaderboard) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Gagal memuat data</td></tr>'; return; }
+        if (data.leaderboard.length === 0) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Belum ada data skor</td></tr>'; return; }
         let html = '';
         data.leaderboard.forEach((row, idx) => {
             const editorName = escapeHtml(row.editor_name);
             html += `<tr>
-                <td data-label="Peringkat">${idx + 1}</td>
+                <td data-label="Peringkat">${idx+1}</td>
                 <td data-label="Nama Editor">${editorName}</td>
                 <td data-label="Total Project">${row.total_projects}</td>
                 <td data-label="Tepat Waktu">${row.on_time_projects}</td>
@@ -1142,43 +1254,29 @@ async function loadLeaderboardModal() {
                 <td data-label="Revisi">${row.revision_count}</td>
                 <td data-label="Retake">${row.retake_count}</td>
                 <td data-label="Skor"><strong>${row.score}</strong></td>
-                <td data-label="Aksi">
-                    <button class="btn btn-wa btn-sm" onclick="openChatFromLeaderboard('${editorName}')" title="Kirim WhatsApp">
-                        <i class="fa-brands fa-whatsapp"></i>
-                    </button>
-                </td>
+                <td data-label="Aksi"><button class="btn-wa" onclick="openChatFromLeaderboard('${editorName}')" title="Kirim WhatsApp"><i class="fa-brands fa-whatsapp"></i></button></td>
             </tr>`;
         });
         tbody.innerHTML = html;
-    } catch (err) {
-        console.error('Gagal load leaderboard modal', err);
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Error</td></tr>';
-    }
+    } catch (err) { console.error('Gagal load leaderboard modal', err); tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Error</td></tr>'; }
 }
-
 window.openChatFromLeaderboard = function(editorName) {
     const editor = editors.find(e => e.name === editorName);
-    if (!editor) {
-        alert('Editor tidak ditemukan');
-        return;
-    }
-    if (!editor.wa) {
-        alert('Nomor WA editor tidak tersedia');
-        return;
-    }
+    if (!editor) { alert('Editor tidak ditemukan'); return; }
+    if (!editor.wa) { alert('Nomor WA editor tidak tersedia'); return; }
     const select = document.getElementById('wa-recipient-select');
     if (select) {
         for (let opt of select.options) {
-            if (opt.text === editor.name || opt.value === editor.name) {
-                select.value = opt.value;
-                break;
-            }
+            if (opt.text === editor.name || opt.value === editor.name) { select.value = opt.value; break; }
         }
     }
     document.getElementById('wa-recipient-number').value = editor.wa;
     document.getElementById('wa-custom-message').value = `*${settingsData.podcastName || settingsData.loginTitle}*\n\nHalo, ${editor.name}!\n\n`;
     openModal('modalWaCustom');
 };
+
+// ==================== FILTER TABLE SEARCH ====================
+window.filterTable = () => { renderTable(); };
 
 // ==================== ONLOAD ====================
 window.onload = async () => {
@@ -1188,10 +1286,12 @@ window.onload = async () => {
         await refreshData();
         showDashboard();
     } else {
-        document.getElementById('login-page').style.display = 'flex';
+        const loginPage = document.getElementById('login-page');
+        if (loginPage) loginPage.style.display = 'flex';
     }
     if (currentUser !== 'admin') {
-        document.getElementById('toggle-wa-panel-btn').classList.add('hidden');
+        const toggleBtn = document.getElementById('toggle-wa-panel-btn');
+        if (toggleBtn) toggleBtn.classList.add('hidden');
     }
 };
 
@@ -1201,3 +1301,6 @@ window.onclick = function(event) {
         event.target.style.display = 'none';
     }
 };
+</script>
+</body>
+</html>
