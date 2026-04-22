@@ -1,172 +1,3 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Podcast Production Suite</title>
-    <!-- Font Awesome 6 (free) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Chart.js & DataLabels -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f5f5f7; color: #1c1c1e; }
-        /* Loading */
-        .loading-screen { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index:9999; display: none; justify-content: center; align-items: center; }
-        .spinner { width: 50px; height: 50px; border: 5px solid #fff; border-top-color: #007AFF; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        /* Login */
-        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .login-card { background: white; border-radius: 24px; padding: 32px; width: 90%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-        .login-card h2 { margin-bottom: 24px; color: #1c1c1e; }
-        .login-card input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #e5e5ea; border-radius: 12px; font-size: 16px; }
-        .login-card button { width: 100%; padding: 12px; background: #007AFF; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 16px; }
-        /* Dashboard Layout */
-        .dashboard-container { display: none; max-width: 1400px; margin: 0 auto; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px; background: white; border-radius: 20px; padding: 16px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .greeting { font-size: 1.4rem; font-weight: 600; }
-        .stats-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
-        .stat-card { background: white; border-radius: 20px; padding: 16px; flex: 1; min-width: 100px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .stat-number { font-size: 28px; font-weight: 700; }
-        .chart-container { background: white; border-radius: 20px; padding: 16px; margin-bottom: 24px; position: relative; max-width: 300px; margin-left: auto; margin-right: auto; }
-        .filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; align-items: center; background: white; padding: 12px 16px; border-radius: 20px; }
-        .filters select, .filters input { padding: 8px 12px; border-radius: 12px; border: 1px solid #ddd; background: white; }
-        .btn-main { background: #007AFF; color: white; border: none; padding: 8px 16px; border-radius: 12px; cursor: pointer; font-weight: 500; transition: 0.2s; }
-        .btn-gray { background: #8E8E93; }
-        .btn-danger { background: #FF3B30; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e5ea; }
-        th { background: #f8f8fa; font-weight: 600; }
-        .pill { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; color: white; background: #007AFF; }
-        .pill-revision { background: #FF3B30; }
-        .deadline-warning { background: #FFE5E5; color: #FF3B30; font-weight: bold; }
-        .note-cell { max-width: 200px; position: relative; }
-        .note-text { white-space: normal; word-break: break-word; max-height: 60px; overflow: hidden; transition: max-height 0.3s; }
-        .note-text.expanded { max-height: 300px; }
-        .note-more-btn { background: none; border: none; color: #007AFF; cursor: pointer; font-size: 12px; margin-top: 4px; }
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index:1000; justify-content: center; align-items: center; }
-        .modal-content { background: white; border-radius: 28px; padding: 24px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; }
-        .modal-content h3 { margin-bottom: 16px; }
-        .modal-content input, .modal-content select, .modal-content textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 12px; }
-        .modal-content button { margin-top: 12px; }
-        .hidden { display: none; }
-        .wa-log-float { position: fixed; bottom: 20px; right: 20px; background: #25D366; width: 56px; height: 56px; border-radius: 28px; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1001; }
-        .wa-log-badge { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 20px; padding: 2px 6px; font-size: 10px; }
-        .wa-log-popup { display: none; position: fixed; bottom: 90px; right: 20px; width: 400px; max-width: 90vw; max-height: 500px; background: white; border-radius: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 1002; flex-direction: column; overflow: hidden; }
-        .log-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .log-table th, .log-table td { padding: 8px; border-bottom: 1px solid #eee; }
-        .log-success { color: green; font-weight: bold; }
-        .log-failed { color: red; }
-        .wa-panel { position: fixed; right: 0; top: 0; width: 380px; max-width: 90vw; height: 100%; background: white; box-shadow: -4px 0 20px rgba(0,0,0,0.1); z-index: 1100; transform: translateX(100%); transition: transform 0.3s; display: flex; flex-direction: column; }
-        .wa-panel-header { padding: 16px; background: #075E54; color: white; display: flex; justify-content: space-between; align-items: center; }
-        .wa-panel-body { flex: 1; padding: 16px; overflow-y: auto; }
-        .wa-panel-footer { padding: 16px; border-top: 1px solid #eee; }
-        .btn-wa { background: #25D366; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; }
-        .list-item-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
-        @media (max-width: 768px) { th, td { font-size: 12px; padding: 8px; } .filters { flex-direction: column; align-items: stretch; } }
-    </style>
-</head>
-<body>
-<div id="loading-screen" class="loading-screen"><div class="spinner"></div></div>
-
-<!-- LOGIN PAGE -->
-<div id="login-page" class="login-container">
-    <div class="login-card">
-        <h2 id="login-title">Podcast Universe</h2>
-        <input type="text" id="username" placeholder="Nama / Username" autocomplete="off">
-        <input type="password" id="password" placeholder="Password">
-        <button onclick="handleLogin()">Login</button>
-    </div>
-</div>
-
-<!-- DASHBOARD PAGE -->
-<div id="dashboard-page" class="dashboard-container">
-    <div class="header">
-        <div class="greeting" id="greetings"></div>
-        <div>
-            <button class="btn-main" onclick="enterMonitoring()">Monitoring</button>
-            <button class="btn-main" onclick="openManagement()">Manage</button>
-            <button class="btn-main" onclick="handleLogout()">Logout</button>
-            <button id="toggle-wa-panel-btn" class="btn-main btn-gray hidden"><i class="fa-brands fa-whatsapp"></i> WA</button>
-            <button class="btn-main" onclick="openLeaderboardModal()">Leaderboard</button>
-        </div>
-    </div>
-    <div id="admin-controls" class="hidden" style="display: flex; gap: 8px; margin-bottom: 16px;">
-        <button class="btn-main" onclick="openNewProjectModal()">+ New Project</button>
-        <button class="btn-main" onclick="openModal('modalWaCustom')">📨 WA Custom</button>
-        <button id="btn-delete-selected" class="btn-main btn-danger" style="background:#FF3B30;"><i class="fa-solid fa-trash"></i> Delete Selected</button>
-    </div>
-    <div id="editor-score-container" class="stat-card" style="display: none; margin-bottom: 16px;">
-        Skor Anda: <span id="score-value">0</span>
-    </div>
-    <div class="stats-row">
-        <div class="stat-card"><div class="stat-number" id="stat-todo">0</div><div>To do</div></div>
-        <div class="stat-card"><div class="stat-number" id="stat-progress">0</div><div>Progress</div></div>
-        <div class="stat-card"><div class="stat-number" id="stat-review">0</div><div>Review</div></div>
-        <div class="stat-card"><div class="stat-number" id="stat-revision">0</div><div>Revision</div></div>
-        <div class="stat-card"><div class="stat-number" id="stat-retake">0</div><div>Retake</div></div>
-        <div class="stat-card"><div class="stat-number" id="stat-final">0</div><div>Finalized</div></div>
-    </div>
-    <div class="chart-container">
-        <canvas id="statusChart" width="300" height="300"></canvas>
-        <div id="center-percent" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 28px; font-weight: bold;"></div>
-    </div>
-    <div class="filters">
-        <select id="f-subject"><option value="">All Narasumber</option></select>
-        <select id="f-editor" class="hidden"><option value="">All Editor</option></select>
-        <select id="f-status"><option value="">All Status</option></select>
-        <input type="text" id="f-search" placeholder="Cari judul..." onkeyup="filterTable()">
-    </div>
-    <div style="overflow-x: auto;">
-        <table>
-            <thead><tr><th><input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this.checked)"></th><th>Title</th><th>Narasumber</th><th>Host</th><th>Editor</th><th>Deadline</th><th>Status</th><th>RAW</th><th>Res</th><th>Rev</th><th>Note</th><th>Action</th></tr></thead>
-            <tbody id="main-table-body"></tbody>
-        </table>
-    </div>
-</div>
-
-<!-- MONITORING PAGE -->
-<div id="monitoring-page" class="dashboard-container" style="display: none;">
-    <div class="header">
-        <div id="monitoring-title-text"></div>
-        <div><button class="btn-main" onclick="backToLogin()">Kembali</button></div>
-    </div>
-    <div class="stats-row">
-        <div class="stat-card"><span id="mon-sum-editor">0</span> Editor</div>
-        <div class="stat-card"><span id="mon-sum-subject">0</span> Narasumber</div>
-        <div class="stat-card"><span id="mon-sum-video">0</span> Video</div>
-    </div>
-    <div class="filters">
-        <select id="mon-f-subject"></select>
-        <select id="mon-f-editor"></select>
-        <select id="mon-f-status"></select>
-        <button class="btn-main" onclick="renderMonitoringTable()">Filter</button>
-    </div>
-    <div style="overflow-x: auto;">
-        <table><thead><tr><th>Title</th><th>Narasumber</th><th>Host</th><th>Editor</th><th>Deadline</th><th>Status</th><th>RAW</th><th>Res</th><th>Rev</th><th>Note</th></tr></thead><tbody id="monitoring-table-body"></tbody></table>
-    </div>
-</div>
-
-<!-- MODALS -->
-<div id="modalNewProject" class="modal"><div class="modal-content"><h3>Buat Episode Baru</h3><input type="text" id="n-title" placeholder="Judul"><select id="n-subject"></select><input type="text" id="n-host" placeholder="Host"><select id="n-editor"></select><input type="date" id="n-deadline"><input type="url" id="n-raw" placeholder="Link RAW"><button class="btn-main" onclick="saveNewProject()">Simpan</button><button onclick="closeModal('modalNewProject')">Batal</button></div></div>
-
-<div id="modalAction" class="modal"><div class="modal-content"><h3>Edit Project</h3><input type="text" id="a-title" placeholder="Title"><select id="a-subject"></select><input type="text" id="a-host" placeholder="Host"><select id="a-status" onchange="handleStatusChange()"></select><input type="date" id="a-deadline"><select id="a-change-editor"></select><input type="url" id="a-result" placeholder="Result Link"><input type="url" id="a-revision" placeholder="Revision Link"><textarea id="a-note" rows="3" placeholder="Note"></textarea><div id="admin-action-area" class="hidden"><button class="btn-main" onclick="saveAction()">Update</button><button class="btn-danger" onclick="deleteProject()">Hapus</button></div><div id="editor-action-area" class="hidden"></div><button onclick="closeModal('modalAction')">Tutup</button></div></div>
-
-<div id="modalManagement" class="modal"><div class="modal-content"><h3>Pengaturan</h3><label>Folder Material:</label><input type="text" id="m-global"><label>Folder Result:</label><input type="text" id="m-result"><label>Folder Revision:</label><input type="text" id="m-rev"><label>WA Grup Revision:</label><input type="text" id="m-wa-review"><label>WA Grup Retake:</label><input type="text" id="m-wa-retake"><label>WA Admin:</label><input type="text" id="m-admin-wa"><label>Token Fontee:</label><input type="password" id="m-fontee-token"><label>Endpoint Fontee:</label><input type="text" id="m-fontee-endpoint"><label>Country Code:</label><input type="text" id="m-country-code"><hr><h4>Daftar Editor</h4><div id="m-editor-list"></div><div><input type="text" id="m-new-editor-name" placeholder="Nama"><input type="text" id="m-new-editor-wa" placeholder="WA"><button onclick="addEditor()">+</button></div><h4>Daftar Narasumber</h4><div id="m-subject-list"></div><div><input type="text" id="m-new-subject" placeholder="Narasumber"><button onclick="addSubject()">+</button></div><button class="btn-main" onclick="saveManagement()">Simpan Semua</button><button onclick="closeModal('modalManagement')">Tutup</button></div></div>
-
-<div id="modalWaCustom" class="modal"><div class="modal-content"><h3>Kirim WA Custom</h3><select id="wa-recipient-select" onchange="handleWaRecipientChange()"><option value="">-- Pilih Editor --</option></select><input type="text" id="wa-recipient-number" placeholder="Nomor WA"><textarea id="wa-custom-message" rows="5" placeholder="Pesan"></textarea><button class="btn-main" onclick="sendCustomWA()">Kirim</button><button onclick="closeModal('modalWaCustom')">Batal</button></div></div>
-
-<div id="modalLeaderboard" class="modal"><div class="modal-content" style="max-width: 90%; width: auto;"><h3>Leaderboard Skor Editor</h3><div style="overflow-x: auto;"><table><thead><tr><th>Peringkat</th><th>Nama Editor</th><th>Total Project</th><th>Tepat Waktu</th><th>Hari Terlambat</th><th>Revisi</th><th>Retake</th><th>Skor</th><th>Aksi</th></tr></thead><tbody id="leaderboard-modal-body"></tbody></table></div><button onclick="closeModal('modalLeaderboard')">Tutup</button></div></div>
-
-<!-- WA LOG FLOAT -->
-<div id="waLogFloat" class="wa-log-float hidden" onclick="toggleLogPopup()"><i class="fa-brands fa-whatsapp fa-2x"></i><span id="waLogBadge" class="wa-log-badge">0</span></div>
-<div id="waLogPopup" class="wa-log-popup"><div class="wa-panel-header">Log WhatsApp <button onclick="toggleLogPopup()">✕</button></div><div id="waLogBody" style="padding: 10px; overflow-y: auto; max-height: 400px;"></div></div>
-
-<!-- WA PANEL SIDE -->
-<div id="wa-panel" class="wa-panel"><div class="wa-panel-header"><span>WhatsApp Panel</span><button id="close-wa-panel">✕</button></div><div class="wa-panel-body"><div><label><input type="checkbox" id="user-notif-toggle"> Aktifkan notifikasi ke editor</label></div><hr><button id="send-deadline-btn" class="btn-main" style="width:100%; margin: 8px 0;">Kirim Pengingat Deadline</button><hr><textarea id="broadcast-all-message" rows="3" placeholder="Pesan broadcast ke semua editor"></textarea><button id="send-broadcast-all-btn" class="btn-main" style="width:100%; margin-top:8px;">Kirim Broadcast</button><hr><select id="personal-editor-select"><option value="">Pilih Editor</option></select><textarea id="personal-message" rows="3" placeholder="Pesan personal"></textarea><button id="send-personal-btn" class="btn-main" style="width:100%; margin-top:8px;">Kirim Personal</button></div><div class="wa-panel-footer"><div id="wa-panel-status">Siap</div></div></div>
-
-<script>
 // ==================== REGISTER CHART PLUGIN (AMAN) ====================
 if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
     Chart.register(ChartDataLabels);
@@ -216,9 +47,18 @@ function escapeHtml(unsafe) {
 }
 
 // ==================== FUNGSI BANTU MODAL ====================
-const toggleLoading = (show) => { document.getElementById('loading-screen').style.display = show ? 'flex' : 'none'; };
-const openModal = (id) => document.getElementById(id).style.display = 'block';
-const closeModal = (id) => document.getElementById(id).style.display = 'none';
+const toggleLoading = (show) => { 
+    const loading = document.getElementById('loading-screen');
+    if (loading) loading.style.display = show ? 'flex' : 'none';
+};
+const openModal = (id) => {
+    const modal = document.getElementById(id);
+    if (modal) modal.style.display = 'block';
+};
+const closeModal = (id) => {
+    const modal = document.getElementById(id);
+    if (modal) modal.style.display = 'none';
+};
 window.openModal = openModal;
 window.closeModal = closeModal;
 
@@ -227,28 +67,51 @@ const addWALog = (recipient, projectTitle, status, message, success = true) => {
     const timestamp = new Date().toLocaleString('id-ID', { hour12: false });
     whatsappLogs.unshift({ timestamp, recipient, projectTitle: projectTitle || '-', status: status || '-', message: message.length > 50 ? message.substring(0, 50) + '...' : message, success });
     if (whatsappLogs.length > 100) whatsappLogs.pop();
-    updateWABadge(); renderWAPopup();
+    updateWABadge(); 
+    renderWAPopup();
 };
-const updateWABadge = () => { const badge = document.getElementById('waLogBadge'); if (badge) badge.innerText = whatsappLogs.length; };
+const updateWABadge = () => { 
+    const badge = document.getElementById('waLogBadge'); 
+    if (badge) badge.innerText = whatsappLogs.length; 
+};
 const renderWAPopup = () => {
-    const body = document.getElementById('waLogBody'); if (!body) return;
-    if (!whatsappLogs.length) { body.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">Belum ada aktivitas WhatsApp</div>'; return; }
+    const body = document.getElementById('waLogBody'); 
+    if (!body) return;
+    if (!whatsappLogs.length) { 
+        body.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">Belum ada aktivitas WhatsApp</div>'; 
+        return; 
+    }
     let html = '<table class="log-table"><thead><tr><th>Waktu</th><th>Penerima</th><th>Project</th><th>Status</th><th>Pesan</th><th>Hasil</th></tr></thead><tbody>';
     whatsappLogs.forEach(log => {
-        html += `<tr><td>${log.timestamp}</td><td>${log.recipient}</td><td>${log.projectTitle}</td><td>${log.status}</td><td>${log.message}</td><td class="${log.success ? 'log-success' : 'log-failed'}">${log.success ? '✓' : '✗'}</td></tr>`;
+        html += `<tr>
+            <td>${log.timestamp}</td>
+            <td>${log.recipient}</td>
+            <td>${log.projectTitle}</td>
+            <td>${log.status}</td>
+            <td>${log.message}</td>
+            <td class="${log.success ? 'log-success' : 'log-failed'}">${log.success ? '✓' : '✗'}</td>
+        </tr>`;
     });
     html += '</tbody></table>';
     body.innerHTML = html;
 };
 window.toggleLogPopup = () => {
     const popup = document.getElementById('waLogPopup');
-    popup.style.display = popup.style.display === 'flex' ? 'none' : 'flex';
-    if (popup.style.display === 'flex') renderWAPopup();
+    if (popup) popup.style.display = popup.style.display === 'flex' ? 'none' : 'flex';
+    if (popup && popup.style.display === 'flex') renderWAPopup();
 };
 
 // ==================== FUNGSI BANTU FORMAT ====================
-const formatDateDisplay = (dateStr) => { if (!dateStr) return '-'; const d = new Date(dateStr); return isNaN(d) ? dateStr : d.toLocaleDateString('id-ID'); };
-const formatDateForInput = (dateStr) => { if (!dateStr) return ''; const d = new Date(dateStr); return isNaN(d) ? '' : d.toISOString().split('T')[0]; };
+const formatDateDisplay = (dateStr) => { 
+    if (!dateStr) return '-'; 
+    const d = new Date(dateStr); 
+    return isNaN(d) ? dateStr : d.toLocaleDateString('id-ID'); 
+};
+const formatDateForInput = (dateStr) => { 
+    if (!dateStr) return ''; 
+    const d = new Date(dateStr); 
+    return isNaN(d) ? '' : d.toISOString().split('T')[0]; 
+};
 const getDaysUntilDeadline = (deadlineStr) => {
     if (!deadlineStr) return null;
     const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -380,9 +243,12 @@ window.refreshData = async function () {
             settingsData.podcastRevision = settingsData.rev;
         }
 
-        document.getElementById('sum-editor').innerText = editors.length;
-        document.getElementById('sum-subject').innerText = subjects.length;
-        document.getElementById('sum-video').innerText = projects.length;
+        const sumEditor = document.getElementById('sum-editor');
+        if (sumEditor) sumEditor.innerText = editors.length;
+        const sumSubject = document.getElementById('sum-subject');
+        if (sumSubject) sumSubject.innerText = subjects.length;
+        const sumVideo = document.getElementById('sum-video');
+        if (sumVideo) sumVideo.innerText = projects.length;
 
         const matLink = document.getElementById('global-material-link');
         if (matLink) {
@@ -402,7 +268,7 @@ window.refreshData = async function () {
 
         syncDropdowns();
         renderTable();
-        if (document.getElementById('monitoring-page').style.display === 'block') refreshMonitoringPage();
+        if (document.getElementById('monitoring-page') && document.getElementById('monitoring-page').style.display === 'block') refreshMonitoringPage();
 
         if (currentUser === 'admin') {
             const waFloat = document.getElementById('waLogFloat');
@@ -523,7 +389,8 @@ window.renderTable = function () {
         }
 
         const nearCount = filtered.filter(isNearDeadline).length;
-        document.getElementById('sum-deadline-warning').innerText = nearCount;
+        const sumDeadlineWarning = document.getElementById('sum-deadline-warning');
+        if (sumDeadlineWarning) sumDeadlineWarning.innerText = nearCount;
         const deadlineWarningItem = document.getElementById('deadline-warning-item');
         if (deadlineWarningItem) deadlineWarningItem.style.display = nearCount ? 'flex' : 'none';
 
@@ -549,9 +416,9 @@ const updateStatsAndChart = (data) => {
     const center = document.getElementById('center-percent');
     if (center) center.innerText = percent + '%';
     if (myChart) myChart.destroy();
-    const ctx = document.getElementById('statusChart').getContext('2d');
-    if (typeof Chart !== 'undefined') {
-        myChart = new Chart(ctx, {
+    const ctx = document.getElementById('statusChart');
+    if (ctx && typeof Chart !== 'undefined') {
+        myChart = new Chart(ctx.getContext('2d'), {
             type: 'doughnut',
             data: { labels: ['To do', 'In Progress', 'Review', 'Revision', 'Retake', 'Finalized'], datasets: [{ data: [todo, prog, rev, revis, ret, fin], backgroundColor: ['#007AFF', '#FFCC00', '#5856D6', '#FF3B30', '#E67E22', '#34C759'], borderWidth: 0 }] },
             options: { cutout: '70%', plugins: { legend: { display: false }, datalabels: { display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0, backgroundColor: (ctx) => ctx.dataset.backgroundColor[ctx.dataIndex], borderRadius: 4, color: 'white', font: { weight: 'bold', size: 10 }, padding: { top: 2, bottom: 2, left: 6, right: 6 }, formatter: (val, ctx) => { const total = ctx.dataset.data.reduce((a, b) => a + b, 0); return total ? Math.round((val / total) * 100) + '%' : '0%'; } } } }
@@ -852,7 +719,6 @@ window.saveAction = async () => {
             const project = projects.find(p => p.rowIndex === activeRowIndex);
             const editorName = document.getElementById('a-change-editor').value;
             const editor = editors.find(e => e.name === editorName);
-            // Ambil nilai dari form untuk link terbaru
             const newResult = document.getElementById('a-result').value;
             const newRevision = document.getElementById('a-revision').value;
             const newTitle = document.getElementById('a-title').value;
@@ -1301,6 +1167,3 @@ window.onclick = function(event) {
         event.target.style.display = 'none';
     }
 };
-</script>
-</body>
-</html>
