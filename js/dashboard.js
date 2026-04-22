@@ -1,9 +1,5 @@
 // ==================== DAFTARKAN PLUGIN DATALABELS UNTUK CHART ====================
-if (typeof ChartDataLabels !== 'undefined') {
-    Chart.register(ChartDataLabels);
-} else {
-    console.warn('ChartDataLabels tidak ditemukan, plugin tidak akan berfungsi');
-}
+Chart.register(ChartDataLabels);
 
 // ==================== KONFIGURASI & STATE ====================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzhZrDLlOT9dnoZaBxjmH1w-Pr5Ud4j-WSip6CDtBRROBQshs95u9iGRdtMattMk8vL/exec';
@@ -73,8 +69,8 @@ const renderWAPopup = () => {
 };
 window.toggleLogPopup = () => {
     const popup = document.getElementById('waLogPopup');
-    if (popup) popup.style.display = popup.style.display === 'flex' ? 'none' : 'flex';
-    if (popup && popup.style.display === 'flex') renderWAPopup();
+    popup.style.display = popup.style.display === 'flex' ? 'none' : 'flex';
+    if (popup.style.display === 'flex') renderWAPopup();
 };
 
 // ==================== FUNGSI BANTU FORMAT ====================
@@ -158,8 +154,6 @@ const sendWAToMultiple = async (targets, msg, title, st) => {
 // ==================== LOAD DATA ====================
 window.refreshData = async function () {
     toggleLoading(true);
-    // Reset selected rows karena data akan berubah
-    selectedRows.clear();
     try {
         const res = await fetch(SCRIPT_URL + '?podcast=' + podcastId + '&t=' + Date.now());
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -245,9 +239,16 @@ window.refreshData = async function () {
 
         if (currentUser === 'admin') {
             document.getElementById('waLogFloat').classList.remove('hidden');
+            // Sembunyikan leaderboard non-modal karena kita pakai modal
+            const leaderboardSection = document.getElementById('section-leaderboard');
+            if (leaderboardSection) {
+                leaderboardSection.style.display = 'none';
+            }
         } else {
             document.getElementById('waLogFloat').classList.add('hidden');
             document.getElementById('waLogPopup').style.display = 'none';
+            const leaderboardSection = document.getElementById('section-leaderboard');
+            if (leaderboardSection) leaderboardSection.style.display = 'none';
         }
     } catch (e) {
         console.error(e);
@@ -326,16 +327,16 @@ window.renderTable = function () {
             const checked = selectedRows.has(p.rowIndex) ? 'checked' : '';
             html += `<tr>
                 <td data-label="Pilih" style="text-align:center;"><input type="checkbox" class="row-checkbox" data-rowindex="${p.rowIndex}" ${checked} onclick="toggleRowSelection(${p.rowIndex}, this.checked)"></td>
-                <td data-label="Title"><b>${escapeHtml(p.title)}</b></td>
-                <td data-label="Narasumber">${escapeHtml(p.subject)}</td>
-                <td data-label="Host">${escapeHtml(p.host)}</td>
-                <td data-label="Editor">${escapeHtml(p.editor)}</td>
+                <td data-label="Title"><b>${p.title || ''}</b></td>
+                <td data-label="Narasumber">${p.subject || ''}</td>
+                <td data-label="Host">${p.host || ''}</td>
+                <td data-label="Editor">${p.editor || ''}</td>
                 <td data-label="Deadline" class="${deadlineClass}">${formatDateDisplay(p.deadline)}</td>
                 <td data-label="Status"><span class="pill ${isRev ? 'pill-revision' : ''}" style="${isRev ? '' : 'background:' + color}">${p.displayStatus}</span></td>
-                <td data-label="RAW">${p.raw ? `<a href="${escapeHtml(p.raw)}" target="_blank" class="btn-main btn-gray" style="padding:5px"><i class="fa-solid fa-link"></i></a>` : '-'}</td>
-                <td data-label="Res">${p.result ? `<a href="${escapeHtml(p.result)}" target="_blank" class="btn-main btn-gray" style="padding:5px"><i class="fa-solid fa-play"></i></a>` : '-'}</td>
-                <td data-label="Rev">${p.revision ? `<a href="${escapeHtml(p.revision)}" target="_blank" class="btn-main btn-gray" style="padding:5px"><i class="fa-solid fa-rotate"></i></a>` : '-'}</td>
-                <td data-label="Note" class="note-cell">${hasNote ? `<div id="${noteId}" class="note-text">${escapeHtml(noteText)}</div><button class="note-more-btn" onclick="toggleNote('${noteId}')">more</button>` : '-'}</td>
+                <td data-label="RAW">${p.raw ? `<a href="${p.raw}" target="_blank" class="btn-main btn-gray" style="padding:5px"><i class="fa-solid fa-link"></i></a>` : '-'}</td>
+                <td data-label="Res">${p.result ? `<a href="${p.result}" target="_blank" class="btn-main btn-gray" style="padding:5px"><i class="fa-solid fa-play"></i></a>` : '-'}</td>
+                <td data-label="Rev">${p.revision ? `<a href="${p.revision}" target="_blank" class="btn-main btn-gray" style="padding:5px"><i class="fa-solid fa-rotate"></i></a>` : '-'}</td>
+                <td data-label="Note" class="note-cell">${hasNote ? `<div id="${noteId}" class="note-text">${noteText}</div><button class="note-more-btn" onclick="toggleNote('${noteId}')">more</button>` : '-'}</td>
                 <td data-label="Action"><button class="btn-main btn-gray" onclick="openAction(${p.rowIndex})">Edit</button></td>
             </tr>`;
         });
@@ -407,10 +408,10 @@ window.renderMonitoringTable = () => {
     let html = '';
     filtered.forEach(p => {
         html += `<tr>
-            <td data-label="Title">${escapeHtml(p.title)}</td>
-            <td data-label="Narasumber">${escapeHtml(p.subject)}</td>
-            <td data-label="Host">${escapeHtml(p.host)}</td>
-            <td data-label="Editor">${escapeHtml(p.editor)}</td>
+            <td data-label="Title">${p.title || ''}</td>
+            <td data-label="Narasumber">${p.subject || ''}</td>
+            <td data-label="Host">${p.host || ''}</td>
+            <td data-label="Editor">${p.editor || ''}</td>
             <td data-label="Deadline">${formatDateDisplay(p.deadline)}</td>
             <td data-label="Status"><span class="pill" style="background:${getStatusColor(p.displayStatus)}">${p.displayStatus}</span></td>
             <td data-label="RAW">${p.raw ? '🔗' : '-'}</td>
@@ -453,6 +454,11 @@ async function loadEditorScore(editorName) {
     }
 }
 
+// Leaderboard non-modal sudah tidak dipakai
+async function loadLeaderboard() {
+    // Tidak digunakan
+}
+
 const showDashboard = () => {
     document.getElementById('login-page').style.display = 'none';
     document.getElementById('monitoring-page').style.display = 'none';
@@ -474,6 +480,7 @@ const showDashboard = () => {
         document.getElementById('waLogFloat').classList.add('hidden');
         document.getElementById('toggle-wa-panel-btn').classList.add('hidden');
         document.getElementById('waLogPopup').style.display = 'none';
+
         const scoreContainer = document.getElementById('editor-score-container');
         if (scoreContainer) {
             scoreContainer.style.display = 'block';
@@ -560,19 +567,7 @@ window.openAction = (idx) => {
     }
     const sts = document.getElementById('a-status');
     const edSel = document.getElementById('a-change-editor');
-    // Buat daftar editor
-    let editorOptions = editors.map(e => `<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)}</option>`).join('');
-    // Cek apakah editor project saat ini ada di daftar
-    const editorExists = editors.some(e => e.name === p.editor);
-    if (!editorExists && p.editor) {
-        // Tambahkan opsi temporary dengan tanda peringatan
-        editorOptions += `<option value="${escapeHtml(p.editor)}" selected>${escapeHtml(p.editor)} (tidak ada di daftar)</option>`;
-        alert(`Editor "${p.editor}" tidak ditemukan dalam daftar editor. Silakan pilih editor pengganti.`);
-    }
-    edSel.innerHTML = editorOptions;
-    if (editorExists) edSel.value = p.editor;
-    else edSel.value = p.editor; // tetap set, meskipun opsi mungkin tidak ada (tapi sudah ditambahkan di atas)
-    
+    edSel.innerHTML = editors.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
     if (currentUser === 'admin') {
         document.getElementById('admin-action-area').classList.remove('hidden');
         document.getElementById('editor-action-area').classList.add('hidden');
@@ -581,6 +576,7 @@ window.openAction = (idx) => {
         document.getElementById('a-deadline').disabled = false;
         document.getElementById('a-note').disabled = false;
         edSel.disabled = false;
+        edSel.value = p.editor;
     } else {
         document.getElementById('admin-action-area').classList.add('hidden');
         document.getElementById('editor-action-area').classList.remove('hidden');
@@ -589,10 +585,10 @@ window.openAction = (idx) => {
         document.getElementById('a-deadline').disabled = true;
         document.getElementById('a-note').disabled = false;
         edSel.disabled = true;
+        edSel.value = p.editor;
         document.getElementById('editor-action-area').innerHTML = `
             <button class="btn-main" style="width:100%" onclick="window.saveAction()">Save</button>
-            <!-- Tombol Tolak Tugas dinonaktifkan karena backend belum mendukung -->
-            <button class="btn-main" style="background:#FF3B30; width:100%; margin-top:8px;" onclick="window.rejectTaskWarning()" disabled>Tolak Tugas (coming soon)</button>
+            <button class="btn-main" style="background:#FF3B30; width:100%; margin-top:8px;" onclick="window.rejectTask()">Tolak Tugas</button>
         `;
     }
     sts.value = p.status;
@@ -609,11 +605,31 @@ window.handleStatusChange = () => {
     if (!needed) note.value = '';
 };
 
-window.rejectTaskWarning = function() {
-    alert('Fitur "Tolak Tugas" belum tersedia. Silakan hubungi admin untuk reassign project.');
+window.rejectTask = async function() {
+    if (!confirm('Apakah kamu yakin menolak tugas ini? Tugas akan dialihkan ke editor lain.')) return;
+    toggleLoading(true);
+    const formData = new URLSearchParams();
+    formData.append('action', 'REJECT_TASK');
+    formData.append('rowIndex', activeRowIndex);
+    formData.append('reason', 'Tidak bersedia mengerjakan');
+    try {
+        const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
+        const result = await res.json();
+        if (result.success) {
+            alert('Tugas telah dialihkan ke editor lain');
+            closeModal('modalAction');
+            await refreshData();
+        } else {
+            alert('Gagal: ' + (result.error || ''));
+        }
+    } catch (err) {
+        alert('Gagal terhubung ke server');
+        console.error(err);
+    } finally {
+        toggleLoading(false);
+    }
 };
 
-// ==================== SAVE ACTION (DENGAN VALIDASI EDITOR) ====================
 window.saveAction = async () => {
     toggleLoading(true);
     try {
@@ -626,34 +642,12 @@ window.saveAction = async () => {
             return;
         }
 
-        // VALIDASI EDITOR (hanya untuk admin karena editor non-admin tidak bisa ganti editor)
-        let selectedEditor = null;
-        if (currentUser === 'admin') {
-            selectedEditor = document.getElementById('a-change-editor').value;
-            if (!selectedEditor) {
-                alert('Editor tidak boleh kosong. Silakan pilih editor yang valid.');
-                toggleLoading(false);
-                return;
-            }
-            const editorValid = editors.some(e => e.name === selectedEditor);
-            if (!editorValid) {
-                alert(`Editor "${selectedEditor}" tidak valid atau sudah dihapus. Silakan pilih editor lain.`);
-                toggleLoading(false);
-                return;
-            }
-        } else {
-            // Untuk editor, ambil dari project yang sedang diedit
-            const project = projects.find(p => p.rowIndex === activeRowIndex);
-            if (project) selectedEditor = project.editor;
-            else selectedEditor = currentUser;
-        }
-
         const formData = new URLSearchParams();
         formData.append('action', 'UPDATE_STATUS');
         formData.append('rowIndex', activeRowIndex);
         formData.append('status', st);
         formData.append('note', note);
-        formData.append('editor', selectedEditor);
+        formData.append('editor', document.getElementById('a-change-editor').value);
         formData.append('result', document.getElementById('a-result').value);
         formData.append('revision', document.getElementById('a-revision').value);
         formData.append('deadline', document.getElementById('a-deadline').value);
@@ -667,56 +661,63 @@ window.saveAction = async () => {
         const result = await res.json();
         if (result.success) {
             const project = projects.find(p => p.rowIndex === activeRowIndex);
-            const editor = editors.find(e => e.name === selectedEditor);
-            
+            const editorName = document.getElementById('a-change-editor').value;
+            const editor = editors.find(e => e.name === editorName);
             if (currentUser === 'admin') {
                 let link = '', linkLabel = '';
-                if (st === 'Revision' || st === 'Review') { link = document.getElementById('a-result').value || ''; linkLabel = 'Result'; } 
-                else { link = project?.raw || ''; linkLabel = 'RAW'; }
-                
-                if (editor && editor.wa) {
-                    const msg = window.buildAdminToUserMessage(
-                        editor.name,
-                        document.getElementById('a-title').value,
-                        document.getElementById('a-subject').value,
-                        document.getElementById('a-host').value,
-                        st,
-                        document.getElementById('a-deadline').value,
-                        note,
-                        link,
-                        linkLabel
-                    );
-                    await sendWABackend(editor.wa, msg, document.getElementById('a-title').value, st);
-                } else if (editor && !editor.wa) {
-                    alert(`Nomor WA untuk editor ${editor.name} tidak terisi! WA tidak dikirim.`);
-                }
+                if (st === 'Revision' || st === 'Review') { link = project.result || ''; linkLabel = 'Result'; } else { link = project.raw || ''; linkLabel = 'RAW'; }
+                if (editor) {
+                    if (!editor.wa) {
+                        alert(`Nomor WA untuk editor ${editor.name} tidak terisi! WA tidak dikirim.`);
+                    } else {
+                        const msg = window.buildAdminToUserMessage(
+                            editor.name,
+                            document.getElementById('a-title').value,
+                            document.getElementById('a-subject').value,
+                            document.getElementById('a-host').value,
+                            st,
+                            document.getElementById('a-deadline').value,
+                            note,
+                            link,
+                            linkLabel
+                        );
+                        console.log(`📨 Mengirim WA ke editor ${editor.name} (${editor.wa})`);
+                        await sendWABackend(editor.wa, msg, document.getElementById('a-title').value, st);
+                    }
+                } else { alert('Editor tidak ditemukan! WA tidak dikirim.'); }
 
                 if (st === 'Revision' && settingsData.waRev) {
                     const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', document.getElementById('a-title').value, document.getElementById('a-subject').value, document.getElementById('a-host').value, st, document.getElementById('a-deadline').value, note, link, linkLabel);
+                    console.log(`📨 Mengirim WA ke grup Revision: ${settingsData.waRev}`);
                     await sendWAToMultiple(settingsData.waRev, msg, document.getElementById('a-title').value, st);
                 }
                 if (st === 'Retake' && settingsData.waRet) {
                     const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', document.getElementById('a-title').value, document.getElementById('a-subject').value, document.getElementById('a-host').value, st, document.getElementById('a-deadline').value, note, link, linkLabel);
+                    console.log(`📨 Mengirim WA ke grup Retake: ${settingsData.waRet}`);
                     await sendWAToMultiple(settingsData.waRet, msg, document.getElementById('a-title').value, st);
                 }
                 if (settingsData.adminWa) {
                     const msg = window.buildUserToAdminMessage(editor?.name || 'Admin', document.getElementById('a-title').value, document.getElementById('a-subject').value, document.getElementById('a-host').value, st, document.getElementById('a-deadline').value, note, link, linkLabel);
+                    console.log(`📨 Mengirim WA ke admin: ${settingsData.adminWa}`);
                     await sendWAToMultiple(settingsData.adminWa, msg, document.getElementById('a-title').value, st);
                 }
             } else {
-                // Editor mengupdate status
-                if (settingsData.fonteetoken && editor) {
+                if (settingsData.fonteetoken) {
+                    const editorName = currentUser;
                     let link = '', linkLabel = '';
-                    if (st === 'Review') { link = project?.result || ''; linkLabel = 'Result'; }
-                    else if (st === 'Revision') { link = project?.revision || ''; linkLabel = 'Revision'; }
-                    const msg = window.buildUserToAdminMessage(editor.name, project.title, project.subject, project.host, st, project.deadline, note, link, linkLabel);
+                    if (st === 'Review') { link = project.result || ''; linkLabel = 'Result'; }
+                    else if (st === 'Revision') { link = project.revision || ''; linkLabel = 'Revision'; }
+                    const msg = window.buildUserToAdminMessage(editorName, project.title, project.subject, project.host, st, project.deadline, note, link, linkLabel);
                     if (settingsData.adminWa) {
+                        console.log(`📨 Editor mengirim WA ke admin: ${settingsData.adminWa}`);
                         await sendWAToMultiple(settingsData.adminWa, msg, project.title, st);
                     }
                     if (st === 'Revision' && settingsData.waRev) {
+                        console.log(`📨 Editor mengirim WA ke grup Revision: ${settingsData.waRev}`);
                         await sendWAToMultiple(settingsData.waRev, msg, project.title, st);
                     }
                     if (st === 'Retake' && settingsData.waRet) {
+                        console.log(`📨 Editor mengirim WA ke grup Retake: ${settingsData.waRet}`);
                         await sendWAToMultiple(settingsData.waRet, msg, project.title, st);
                     }
                 }
@@ -922,7 +923,7 @@ window.buildUserToAdminMessage = (editorName, projectTitle, subject, host, statu
     return msg;
 };
 
-// ==================== PANEL WHATSAPP (tanpa personal chat) ====================
+// ==================== PANEL WHATSAPP ====================
 const togglePanelBtn = document.getElementById('toggle-wa-panel-btn');
 const closePanelBtn = document.getElementById('close-wa-panel');
 const waPanel = document.getElementById('wa-panel');
@@ -930,6 +931,9 @@ const userNotifToggle = document.getElementById('user-notif-toggle');
 const sendDeadlineBtn = document.getElementById('send-deadline-btn');
 const sendBroadcastAllBtn = document.getElementById('send-broadcast-all-btn');
 const broadcastAllMessage = document.getElementById('broadcast-all-message');
+const personalEditorSelect = document.getElementById('personal-editor-select');
+const personalMessage = document.getElementById('personal-message');
+const sendPersonalBtn = document.getElementById('send-personal-btn');
 const waPanelStatus = document.getElementById('wa-panel-status');
 
 function updatePanelStatus(text, isError = false) {
@@ -953,6 +957,19 @@ if (togglePanelBtn) {
 if (closePanelBtn) {
     closePanelBtn.addEventListener('click', () => {
         waPanel.style.transform = 'translateX(100%)';
+    });
+}
+
+function loadPersonalEditors() {
+    if (!personalEditorSelect) return;
+    personalEditorSelect.innerHTML = '<option value="">Pilih Editor</option>';
+    editors.forEach(editor => {
+        if (editor.wa) {
+            const option = document.createElement('option');
+            option.value = editor.wa;
+            option.textContent = `${editor.name} (${editor.wa})`;
+            personalEditorSelect.appendChild(option);
+        }
     });
 }
 
@@ -1061,6 +1078,32 @@ if (sendBroadcastAllBtn) {
     });
 }
 
+if (sendPersonalBtn) {
+    sendPersonalBtn.addEventListener('click', async function() {
+        const target = personalEditorSelect.value;
+        const message = personalMessage.value.trim();
+        if (!target) { alert('Pilih editor'); return; }
+        if (!message) { alert('Pesan tidak boleh kosong'); return; }
+        updatePanelStatus('Mengirim...');
+        const msg = `*${settingsData.podcastName || settingsData.loginTitle}*\n\n${message}`;
+        const success = await sendWABackend(target, msg, 'Personal Chat', '');
+        if (success) {
+            updatePanelStatus('Pesan terkirim');
+            personalMessage.value = '';
+        } else {
+            updatePanelStatus('Gagal mengirim', true);
+        }
+    });
+}
+
+const originalSyncDropdowns = syncDropdowns;
+window.syncDropdowns = function() {
+    originalSyncDropdowns();
+    if (currentUser === 'admin') {
+        loadPersonalEditors();
+    }
+};
+
 // ==================== MODAL LEADERBOARD ====================
 window.openLeaderboardModal = function() {
     const modal = document.getElementById('modalLeaderboard');
@@ -1148,8 +1191,7 @@ window.onload = async () => {
         document.getElementById('login-page').style.display = 'flex';
     }
     if (currentUser !== 'admin') {
-        const toggleBtn = document.getElementById('toggle-wa-panel-btn');
-        if (toggleBtn) toggleBtn.classList.add('hidden');
+        document.getElementById('toggle-wa-panel-btn').classList.add('hidden');
     }
 };
 
@@ -1157,46 +1199,5 @@ window.onload = async () => {
 window.onclick = function(event) {
     if (event.target.classList.contains('modal')) {
         event.target.style.display = 'none';
-    }
-};
-
-// ==================== TAMBAHAN: TOMBOL BERSIHKAN ORPHAN (OPSIONAL) ====================
-// Tambahkan tombol ini ke admin-controls jika ingin membersihkan project orphan
-function addCleanOrphanButton() {
-    const adminControls = document.getElementById('admin-controls');
-    if (adminControls && !document.getElementById('btn-clean-orphan')) {
-        const btn = document.createElement('button');
-        btn.id = 'btn-clean-orphan';
-        btn.className = 'btn-main btn-gray';
-        btn.innerHTML = '<i class="fa-solid fa-broom"></i> Bersihkan Orphan';
-        btn.onclick = async () => {
-            if (!confirm('Bersihkan project dengan editor tidak valid? Proses ini akan mereassign ke editor yang tersedia.')) return;
-            toggleLoading(true);
-            try {
-                const formData = new URLSearchParams();
-                formData.append('action', 'CLEAN_ORPHAN_PROJECTS');
-                const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
-                const result = await res.json();
-                if (result.success) {
-                    alert(result.message || 'Orphan projects telah dibersihkan');
-                    await refreshData();
-                } else {
-                    alert('Gagal: ' + (result.error || ''));
-                }
-            } catch (err) {
-                alert('Error: ' + err.message);
-            } finally {
-                toggleLoading(false);
-            }
-        };
-        adminControls.appendChild(btn);
-    }
-}
-// Panggil setelah admin controls ditampilkan (misal di showDashboard)
-const originalShowDashboard = showDashboard;
-window.showDashboard = function() {
-    originalShowDashboard();
-    if (currentUser === 'admin') {
-        addCleanOrphanButton();
     }
 };
