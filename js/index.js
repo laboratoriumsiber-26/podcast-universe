@@ -1,4 +1,4 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzcz44qSH0lAOzp-CaHOKOKv_IP_1zgoQWMy0AymN2_/dev';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwb6SzDPRYCZkbereZIxH1eKPgEfzn3Tj-By7vhtow5vrOIXCinY3Z7M3UJ6E1oOmoQ1A/exec';
 const CACHE_KEY = 'podcastData';
 const CACHE_DURATION = 5 * 60 * 1000;
 
