@@ -159,6 +159,7 @@ const sendWABackend = async (target, msg, projectTitle = '', status = '') => {
     formData.append('action', 'SEND_WA_NOTIFICATION');
     formData.append('targetNumber', target);
     formData.append('customMessage', msg);
+    // Tidak perlu auth_token untuk send WA (bisa diakses publik)
     try {
         const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
         const data = await res.json();
@@ -580,6 +581,10 @@ window.saveNewProject = async () => {
     formData.append('deadline', deadline);
     formData.append('raw', raw);
     formData.append('podcastId', podcastId);
+    // Tambahkan auth_token untuk admin (CREATE butuh akses admin)
+    if (currentUser === 'admin') {
+        formData.append('auth_token', settingsData.adminPassword);
+    }
     try {
         const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
         const result = await res.json();
@@ -668,6 +673,10 @@ window.rejectTask = async function() {
     formData.append('action', 'REJECT_TASK');
     formData.append('rowIndex', activeRowIndex);
     formData.append('reason', 'Tidak bersedia mengerjakan');
+    // Reject task memerlukan akses admin? Tergantung backend, tapi aman kirim token jika admin
+    if (currentUser === 'admin') {
+        formData.append('auth_token', settingsData.adminPassword);
+    }
     try {
         const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
         const result = await res.json();
@@ -711,6 +720,7 @@ window.saveAction = async () => {
             formData.append('title', document.getElementById('a-title').value);
             formData.append('subject', document.getElementById('a-subject').value);
             formData.append('host', document.getElementById('a-host').value);
+            formData.append('auth_token', settingsData.adminPassword);
         }
 
         const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
@@ -777,6 +787,9 @@ window.deleteProject = async () => {
     const formData = new URLSearchParams();
     formData.append('action', 'DELETE');
     formData.append('rowIndex', activeRowIndex);
+    if (currentUser === 'admin') {
+        formData.append('auth_token', settingsData.adminPassword);
+    }
     try {
         const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
         const result = await res.json();
@@ -837,6 +850,8 @@ window.saveManagement = async () => {
     formData.append('countryCode', document.getElementById('m-country-code').value);
     formData.append('editors', JSON.stringify(editors));
     formData.append('subjects', JSON.stringify(subjects));
+    // WAJIB: tambahkan auth_token untuk admin
+    formData.append('auth_token', settingsData.adminPassword);
     toggleLoading(true);
     try {
         const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
@@ -917,6 +932,9 @@ window.deleteSelected = async () => {
             const formData = new URLSearchParams();
             formData.append('action', 'DELETE');
             formData.append('rowIndex', rowIndex);
+            if (currentUser === 'admin') {
+                formData.append('auth_token', settingsData.adminPassword);
+            }
             await fetch(SCRIPT_URL, { method: 'POST', body: formData });
         }
         selectedRows.clear();
@@ -1007,6 +1025,9 @@ if (userNotifToggle) {
         const formData = new URLSearchParams();
         formData.append('action', 'UPDATE_USER_NOTIF');
         formData.append('active', active);
+        if (currentUser === 'admin') {
+            formData.append('auth_token', settingsData.adminPassword);
+        }
         try {
             const res = await fetch(SCRIPT_URL, { method: 'POST', body: formData });
             const data = await res.json();
