@@ -1,7 +1,7 @@
 // js/login.js
 
 // ==================== KONFIGURASI ====================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyXQI5sF8ZErj1g2okMCE_KLVi91vljcUBJbcdk2fFhydM5tqzAO_B3H_PIEpC_WxA_Hg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuTNChjKRB5JHP5lxbZB8qqRwLZHUpTxWyldX2UpFNQyyPIXatGZzUySlbLHjFO0XyBw/exec';
 const SETTINGS_CACHE_KEY = 'adminSettings';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 menit
 
