@@ -1,6 +1,6 @@
 // js/admin.js
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBlqXYNUHOgpCxxFcTB2NXeHa8MWxPzLz_L_NBa6UJLf-aDD-iSusxHm_7h3CxLt20Kw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7NzpUCoVACPM_GdMP3NiqEf9zNwTEY-EyFZtZQOPfeuLrVFHcI3zxprJJQLE48xHqBA/exec';
 const CACHE_KEY = 'podcastData';
 const CACHE_DURATION = 5 * 60 * 1000;
 
